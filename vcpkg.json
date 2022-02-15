@@ -1,0 +1,39 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "skyrim-ng-sample-plugin",
+    "version-string": "1.0.0",
+    "description": "Sample SKSE plugin based on Fully Dynamic Game Engine's platform.",
+    "homepage": "https://www.skyrimng.com",
+    "license": "Apache-2.0",
+    "dependencies": [
+        "commonlibsse"
+    ],
+    "features": {
+        "scripts": {
+            "description": "Install Papyrus sources for this program to develop on top of it."
+        },
+        "scripts-dev": {
+            "description": "Install Papyrus sources necessary to develop scripts for this plugin.",
+            "dependencies": [
+                "bethesda-skyrim-scripts",
+                {
+                    "name": "skse",
+                    "default-features": false,
+                    "features": [
+                        "scripts"
+                    ]
+                }
+            ]
+        },
+        "tests": {
+            "description": "Build tests for the plugin.",
+            "dependencies": [
+                "gtest"
+            ]
+        }
+    },
+    "default-features": [
+        "scripts-dev",
+        "tests"
+    ]
+}
