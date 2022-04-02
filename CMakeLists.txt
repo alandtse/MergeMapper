@@ -153,6 +153,8 @@ add_library(${PROJECT_NAME} SHARED
         ${CMAKE_CURRENT_BINARY_DIR}/version.rc
 )
 
+add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
+
 target_compile_features(${PROJECT_NAME}
         PUBLIC
         cxx_std_23
@@ -186,6 +188,12 @@ target_precompile_headers(${PROJECT_NAME}
         PRIVATE
         src/PCH.h
 )
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/Sample"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(TARGETS ${PROJECT_NAME}
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 # Automatic deployment to FOMOD directory.
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
