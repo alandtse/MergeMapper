@@ -1,10 +1,19 @@
-#include <Sample/Config.h>
+#include <Sample/HitCounterManager.h>
+
+#include "Config.h"
+#include "Papyrus.h"
 
 using namespace RE::BSScript;
 using namespace SKSE;
 using namespace SKSE::log;
 using namespace SKSE::stl;
 
+namespace {
+    constexpr std::string_view PluginName = "Sample Plugin";
+    constexpr REL::Version PluginVersion = {1, 0, 0, 0};
+}
+
+#ifdef BUILD_AE
 /**
  * Declaration of the plugin metadata.
  *
@@ -17,11 +26,12 @@ using namespace SKSE::stl;
  */
 EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     SKSE::PluginVersionData v;
-    v.PluginName("Sample Plugin");
-    v.PluginVersion({1, 0, 0, 0}); // Version 1.0.0.0.
+    v.PluginName(PluginName);
+    v.PluginVersion(PluginVersion);
     v.UsesAddressLibrary(true);
     return v;
 }();
+#endif
 
 /**
  * Callback used by SKSE for Skyrim runtime versions 1.5.x to detect if a DLL is an SKSE plugin.
@@ -41,9 +51,9 @@ EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
  * </p>
  */
 EXTERN_C SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface&, PluginInfo* pluginInfo) {
-    pluginInfo->name = SKSEPlugin_Version.pluginName;
+    pluginInfo->name = PluginName.data();
     pluginInfo->infoVersion = PluginInfo::kVersion;
-    pluginInfo->version = SKSEPlugin_Version.pluginVersion >> 24; // Gets the major version number.
+    pluginInfo->version = PluginVersion.pack();
     return true;
 }
 
@@ -64,25 +74,30 @@ namespace {
         if (!path) {
             report_and_fail("Unable to lookup SKSE logs directory.");
         }
-        *path /= SKSEPlugin_Version.pluginName;
+        *path /= PluginName;
         *path += L".log";
 
-        auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-        const auto level = spdlog::level::trace;
-
-        auto log = std::make_shared<spdlog::logger>("global log"s, std::move(debugSink));
-        log->set_level(level);
-        log->flush_on(level);
+        std::shared_ptr<spdlog::logger> log;
+        if (IsDebuggerPresent()) {
+            log = std::make_shared<spdlog::logger>(
+                "Global", std::make_shared<spdlog::sinks::msvc_sink_mt>());
+        } else {
+            log = std::make_shared<spdlog::logger>(
+                "Global", std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
+        }
+        const auto& debugConfig = Sample::Config::GetSingleton().GetDebug();
+        log->set_level(debugConfig.GetLogLevel());
+        log->flush_on(debugConfig.GetFlushLevel());
 
         spdlog::set_default_logger(std::move(log));
-        spdlog::set_pattern("%g(%#): [%^%l%$] %v"s);
+        spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v");
     }
 
     /**
      * Initialize the SKSE cosave system for our plugin.
      *
      * <p>
-     * SKSE comes with a feature called a <em>cosave</em>, an additional save file kept alongside the orignal Skyrim
+     * SKSE comes with a feature called a <em>cosave</em>, an additional save file kept alongside the original Skyrim
      * save file. SKSE plugins can write their own data to this file, and load it again when the save game is loaded,
      * allowing them to keep custom data along with a player's save. Each plugin must have a unique ID, which is four
      * characters long (similar to the record names used by forms in ESP files). Note however this is little-endian, so
@@ -95,11 +110,13 @@ namespace {
      * </p>
      */
     void InitializeSerialization() {
+        log::trace("Initializing cosave serialization...");
         auto* serde = GetSerializationInterface();
         serde->SetUniqueID('SMPL');
-        serde->SetSaveCallback();
-        serde->SetRevertCallback();
-        serde->SetLoadCallback();
+        serde->SetSaveCallback(Sample::HitCounterManager::OnGameSaved);
+        serde->SetRevertCallback(Sample::HitCounterManager::OnRevert);
+        serde->SetLoadCallback(Sample::HitCounterManager::OnRevert);
+        log::trace("Cosave serialization initialized.");
     }
 
     /**
@@ -117,11 +134,12 @@ namespace {
      * </p>
      */
     void InitializePapyrus() {
-        GetPapyrusInterface()->Register([](IVirtualMachine* vm) {
-
-
-            return true;
-        });
+        log::trace("Initializing Papyrus binding...");
+        if (GetPapyrusInterface()->Register(Sample::RegisterHitCounter)) {
+            log::debug("Papyrus functions bound.");
+        } else {
+            log::error("Failure to register Papyrus bindings.");
+        }
     }
 
     /**
@@ -194,7 +212,11 @@ namespace {
      * </p>
      */
     void InitializeHooking() {
-        GetTrampoline().create(64);
+        log::trace("Initializing trampoline...");
+        auto& trampoline = GetTrampoline();
+        trampoline.create(64);
+        log::trace("Trampoline initialized.");
+        Sample::InitializeHook(trampoline);
     }
 }
 
@@ -210,11 +232,13 @@ namespace {
  */
 EXTERN_C SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Load(const LoadInterface* skse) {
     InitializeLogging();
+    log::info("{} is loading...", PluginName);
     Init(skse);
     InitializeMessaging();
     InitializeSerialization();
     InitializePapyrus();
     InitializeHooking();
 
+    log::info("{} has finished loading.", PluginName);
     return true;
 }

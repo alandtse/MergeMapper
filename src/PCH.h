@@ -95,6 +95,7 @@
 #include <vector>
 #include <version>
 
+#define SPDLOG_COMPILED_LIB
 #define _INC_WINDOWS
 #include <SKSE/Impl/PCH.h>
 #include <RE/Skyrim.h>

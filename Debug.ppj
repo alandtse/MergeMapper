@@ -8,8 +8,8 @@
     Anonymize="true"
     Final="false">
     <Imports>
-        <Import>.\build\debug\vcpkg_installed\x64-windows-skse\contrib\papyrus\skse</Import>
-        <Import>.\build\debug\vcpkg_installed\x64-windows-skse\contrib\papyrus\skyrim</Import>
+        <Import>.\build\debug-ae\vcpkg_installed\x64-windows-skse\contrib\papyrus\skse</Import>
+        <Import>.\build\debug-ae\vcpkg_installed\x64-windows-skse\contrib\papyrus\skyrim</Import>
     </Imports>
     <Folders>
         <Folder>.\contrib\Distribution\PapyrusSources</Folder>

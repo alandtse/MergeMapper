@@ -1,13 +1,10 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
-    "name": "skyrim-ng-sample-plugin",
+    "name": "commonlibsse-sample-plugin",
     "version-string": "1.0.0",
     "description": "Sample SKSE plugin based on Fully Dynamic Game Engine's platform.",
     "homepage": "https://www.skyrimng.com",
     "license": "Apache-2.0",
-    "dependencies": [
-        "commonlibsse"
-    ],
     "features": {
         "scripts": {
             "description": "Install Papyrus sources for this program to develop on top of it."
@@ -25,15 +22,77 @@
                 }
             ]
         },
-        "tests": {
-            "description": "Build tests for the plugin.",
+        "plugin-ae": {
+            "description": "Build the AE version of the plugin.",
+            "dependencies": [
+                "articuno",
+                "commonlibsse",
+                "ryml"
+            ]
+        },
+        "plugin-se": {
+            "description": "Build the SE version of the plugin.",
+            "dependencies": [
+                "articuno",
+                "commonlibsse-legacy"
+            ]
+        },
+        "plugin-vr": {
+            "description": "Build the VR version of the plugin.",
+            "dependencies": [
+                "articuno",
+                "commonlibvr"
+            ]
+        },
+        "test-base": {
+            "description": "Base configuration feature for test building.",
             "dependencies": [
                 "gtest"
+            ]
+        },
+        "tests-ae": {
+            "description": "Build tests for the AE version of the plugin.",
+            "dependencies": [
+                {
+                    "name": "commonlibsse-sample-plugin",
+                    "default-features": false,
+                    "features": [
+                        "plugin-ae",
+                        "test-base"
+                    ]
+                }
+            ]
+        },
+        "tests-se": {
+            "description": "Build tests for the SE version of the plugin.",
+            "dependencies": [
+                {
+                    "name": "commonlibsse-sample-plugin",
+                    "default-features": false,
+                    "features": [
+                        "plugin-se",
+                        "test-base"
+                    ]
+                }
+            ]
+        },
+        "tests-vr": {
+            "description": "Build tests for the VR version of the plugin.",
+            "dependencies": [
+                {
+                    "name": "commonlibsse-sample-plugin",
+                    "default-features": false,
+                    "features": [
+                        "plugin-vr",
+                        "test-base"
+                    ]
+                }
             ]
         }
     },
     "default-features": [
         "scripts-dev",
-        "tests"
+        "plugin-ae",
+        "tests-ae"
     ]
 }

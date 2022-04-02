@@ -533,12 +533,7 @@ FodyWeavers.xsd
 
 build/
 
-contrib/Distribution/*Debug/*
-contrib/Distribution/*Release/*
-!contrib/Distribution/*Debug/Fully Dynamic Game Engine/*
-!contrib/Distribution/*Release/Fully Dynamic Game Engine/*
-!contrib/Distribution/ConfigDebug/*
-!contrib/Distribution/ConfigRelease/*
-contrib/Distribution/Data/Scripts/*
-contrib/Distribution/*.zip
-contrib/Distribution/*.7z
+contrib/Distribution/**/*.dll
+contrib/Distribution/**/*.pdb
+contrib/Distribution/**/*.pex
+contrib/Distribution/*

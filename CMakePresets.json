@@ -29,54 +29,200 @@
             }
         },
         {
-            "name": "Debug",
-            "inherits": "vcpkg",
+            "name": "build-tests",
+            "displayName": "Build Tests",
+            "hidden": true,
+            "description": "Include test suites in the build.",
+            "cacheVariables": {
+                "BUILD_TESTS": {
+                    "type": "STRING",
+                    "value": "ON"
+                }
+            }
+        },
+        {
+            "name": "build-ae",
+            "displayName": "Build for AE",
+            "hidden": true,
+            "description": "Target the build to Skyrim SE 1.6.x.",
+            "cacheVariables": {
+                "VCPKG_INSTALL_OPTIONS": {
+                    "type": "STRING",
+                    "value": "--x-no-default-features;--x-feature=tests-ae;--x-feature=scripts-dev"
+                }
+            }
+        },
+        {
+            "name": "build-se",
+            "displayName": "Build for SE",
+            "hidden": true,
+            "description": "Target the build to Skyrim SE 1.5.x.",
+            "cacheVariables": {
+                "BUILD_SE": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "VCPKG_INSTALL_OPTIONS": {
+                    "type": "STRING",
+                    "value": "--x-no-default-features;--x-feature=tests-se;--x-feature=scripts-dev"
+                }
+            }
+        },
+        {
+            "name": "build-vr",
+            "displayName": "Build for VR",
+            "hidden": true,
+            "description": "Target the build to Skyrim VR.",
+            "cacheVariables": {
+                "BUILD_VR": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "VCPKG_INSTALL_OPTIONS": {
+                    "type": "STRING",
+                    "value": "--x-no-default-features;--x-feature=tests-vr;--x-feature=scripts-dev"
+                }
+            }
+        },
+        {
+            "name": "debug",
             "displayName": "Debug",
-            "description": "Debug build for testing.",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/debug",
+            "hidden": true,
+            "description": "Build in debug mode.",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": {
                     "type": "STRING",
                     "value": "Debug"
-                },
-                "BUILD_TESTS": {
-                    "type": "STRING",
-                    "value": "ON"
                 }
             }
         },
         {
-            "name": "Release",
-            "inherits": "vcpkg",
+            "name": "release",
             "displayName": "Release",
-            "description": "Optimized release build with debug symbols.",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/relwithdebinfo",
+            "hidden": true,
+            "description": "Build in release mode.",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": {
                     "type": "STRING",
                     "value": "RelWithDebInfo"
-                },
-                "BUILD_TESTS": {
-                    "type": "STRING",
-                    "value": "ON"
                 }
             }
+        },
+        {
+            "name": "Debug-AE",
+            "inherits": [
+                "vcpkg",
+                "build-tests",
+                "build-ae",
+                "debug"
+            ],
+            "displayName": "Debug (AE)",
+            "description": "Debug build for testing for Skyrim AE.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug-ae"
+        },
+        {
+            "name": "Release-AE",
+            "inherits": [
+                "vcpkg",
+                "build-tests",
+                "build-ae",
+                "release"
+            ],
+            "displayName": "Release (AE)",
+            "description": "Optimized release build with debug symbols for Skyrim AE.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/relwithdebinfo-ae"
+        },
+        {
+            "name": "Debug-SE",
+            "inherits": [
+                "vcpkg",
+                "build-tests",
+                "build-se",
+                "debug"
+            ],
+            "displayName": "Debug (SE)",
+            "description": "Debug build for testing for Skyrim SE.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug-se"
+        },
+        {
+            "name": "Release-SE",
+            "inherits": [
+                "vcpkg",
+                "build-tests",
+                "build-se",
+                "release"
+            ],
+            "displayName": "Release (SE)",
+            "description": "Optimized release build with debug symbols for Skyrim SE.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/relwithdebinfo-se"
+        },
+        {
+            "name": "Debug-VR",
+            "inherits": [
+                "vcpkg",
+                "build-tests",
+                "build-vr",
+                "debug"
+            ],
+            "displayName": "Debug (VR)",
+            "description": "Debug build for testing for Skyrim VR.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug-vr"
+        },
+        {
+            "name": "Release-VR",
+            "inherits": [
+                "vcpkg",
+                "build-tests",
+                "build-vr",
+                "release"
+            ],
+            "displayName": "Release (VR)",
+            "description": "Optimized release build with debug symbols for Skyrim VR.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/relwithdebinfo-vr"
         }
     ],
     "buildPresets": [
         {
-            "name": "Release",
-            "displayName": "Release",
-            "configurePreset": "Release",
-            "description": "Optimized release build with debug symbols."
+            "name": "Release-AE",
+            "displayName": "Release (AE)",
+            "configurePreset": "Release-AE",
+            "description": "Optimized release build with debug symbols for Skyrim AE."
         },
         {
-            "name": "Debug",
-            "displayName": "Debug",
-            "configurePreset": "Debug",
-            "description": "Debug build for testing."
+            "name": "Debug-AE",
+            "displayName": "Debug (AE)",
+            "configurePreset": "Debug-AE",
+            "description": "Debug build for testing for Skyrim AE."
+        },
+        {
+            "name": "Release-SE",
+            "displayName": "Release (SE)",
+            "configurePreset": "Release-SE",
+            "description": "Optimized release build with debug symbols for Skyrim SE."
+        },
+        {
+            "name": "Debug-SE",
+            "displayName": "Debug (SE)",
+            "configurePreset": "Debug-SE",
+            "description": "Debug build for testing for Skyrim SE."
+        },
+        {
+            "name": "Release-VR",
+            "displayName": "Release (VR)",
+            "configurePreset": "Release-VR",
+            "description": "Optimized release build with debug symbols for Skyrim VR."
+        },
+        {
+            "name": "Debug-VR",
+            "displayName": "Debug (VR)",
+            "configurePreset": "Debug-VR",
+            "description": "Debug build for testing for Skyrim VR."
         }
     ]
 }

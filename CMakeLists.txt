@@ -21,6 +21,8 @@ set(headers
 )
 
 set(sources
+        src/Config.cpp
+        src/HitCounterManager.cpp
         src/Main.cpp
         src/Papyrus.cpp)
 
@@ -50,10 +52,30 @@ message("Options:")
 option(BUILD_TESTS "Build unit tests." OFF)
 message("\tTests: ${BUILD_TESTS}")
 
+option(BUILD_SE "Build for Skyrim SE versions prior to 1.6.x." OFF)
+message("\tLegacy Special Edition: ${BUILD_SE}")
+
+option(BUILD_VR "Build for Skyrim VR." OFF)
+message("\tSkyrim VR: ${BUILD_VR}")
+
+if (BUILD_SE)
+    set(BUILD_ABBREV SE)
+    add_compile_definitions(BUILD_SE)
+elseif (BUILD_VR)
+    set(BUILD_ABBREV VR)
+    add_compile_definitions(BUILD_VR)
+else ()
+    set(BUILD_ABBREV AE)
+    add_compile_definitions(BUILD_AE)
+endif ()
+
 ########################################################################################################################
 ## Find dependencies
 ########################################################################################################################
 find_package(CommonLibSSE REQUIRED)
+find_package(ryml CONFIG REQUIRED)
+
+find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
 
 if (BUILD_TESTS)
     find_package(GTest CONFIG REQUIRED)
@@ -136,10 +158,16 @@ target_compile_features(${PROJECT_NAME}
         cxx_std_23
 )
 
+target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+        BOOST_STL_INTERFACES_DISABLE_CONCEPTS
+)
+
 target_include_directories(${PROJECT_NAME}
         PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:src>
+        ${ARTICUNO_INCLUDE_DIRS}
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -149,7 +177,8 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        CommonLibSSE
+        CommonLibSSE::CommonLibSSE
+        ryml::ryml
         spdlog::spdlog
 )
 
@@ -157,6 +186,46 @@ target_precompile_headers(${PROJECT_NAME}
         PRIVATE
         src/PCH.h
 )
+
+# Automatic deployment to FOMOD directory.
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BUILD_NAME "Debug")
+else ()
+    set(BUILD_NAME "Release")
+endif ()
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/${BUILD_ABBREV}${BUILD_NAME}/")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/${BUILD_ABBREV}${BUILD_NAME}/")
+file(GLOB_RECURSE OUTPUT_DLLS "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/**/*.dll")
+file(GLOB_RECURSE OUTPUT_PDBS "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/**/*.pdb")
+file(GLOB_RECURSE OUTPUT_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/**/*.pex")
+set_property(TARGET ${PROJECT_NAME}
+        APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_DLLS}")
+set_property(TARGET ${PROJECT_NAME}
+        APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_PDBS}")
+set_property(TARGET ${PROJECT_NAME}
+        APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_SCRIPTS}")
+
+# Automatic deployment to Mod Organizer 2 mod directory.
+if (BUILD_SE AND DEFINED ENV{CommonLibSSESamplePluginTargetSE})
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetSE}/SKSE/Plugins/")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetSE}/SKSE/Plugins/")
+endif ()
+if (BUILD_VR AND DEFINED ENV{CommonLibSSESamplePluginTargetVR})
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetVR}/SKSE/Plugins/")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetVR}/SKSE/Plugins/")
+endif ()
+if (NOT BUILD_SE AND NOT BUILD_VR AND DEFINED ENV{CommonLibSSESamplePluginTargetAE})
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetAE}/SKSE/Plugins/")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetAE}/SKSE/Plugins/")
+endif ()
 
 ########################################################################################################################
 ## Configure unit tests
