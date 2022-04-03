@@ -23,6 +23,8 @@ complete and modern project from which to learn.
     * [Miscellaneous Elements](#miscellaneous-elements)
   * [Plugin Structure](#plugin-structure)
     * [Plugin Initialization](#plugin-initialization)
+    * [Logging](#logging)
+    * [Configuration](#configuration)
     * [Messaging and Lifecycle Events](#messaging-and-lifecycle-events)
     * [Papyrus Bindings](#papyrus-bindings)
     * [Papyrus Development](#papyrus-development)
@@ -30,6 +32,8 @@ complete and modern project from which to learn.
     * [Function Hooks](#function-hooks)
   * [Other Features](#other-features)
     * [Source Code Formatting](#source-code-formatting)
+    * [Deploying a FOMOD](#deploying-a-fomod)
+    * [Licensing](#licensing)
 
 ## Getting Started
 ### Environment Setup
@@ -344,6 +348,29 @@ This is a CommonLibSSE function which initializes it's various interfaces that a
 rule your load function should initialize logging before all else (to maximize how much code can have logging),
 followed by this function. Calls to other interfaces such as messaging, serialization, Papyrus binding, etc. all require
 this function to be called first.
+
+#### Logging
+Logging is an important way to capture information that helps you debug issues with your plugin, especially when it is
+running on end-users' games. CommonLibSSE bundles spdlog, a popular logging library, and provides some convience
+functions for invoking it. It otherwise leaves configuration up to you. More advanced logging systems are available
+from frameworks like Fully Dynamic Game Engine.
+
+The simple configuration used in this project creates a file sink, which writes log output to a file in the standard
+SKSE logging location (`Documents\My Games\Skyrim Special Edition\SKSE`, or `Skyrim VR` if playing Skyrim VR). On each
+run the file is replaced with a new log. A useful default format is provided. The logging level defaults to `info`, and
+the flush level (the level of a log event that forces all log output to be written to file immediately) is `trace`,
+which is the lowest level (therefore causing any log event to be written immediately).
+
+The logging configuration here has a special behavior if SKSE is run in debug mode and a debugger is attached at the
+time that SKSE starts. Instead of writing to file, it will write to the Windows debug channel, which allows the attached
+debugger to see the messages. The log events will then show up in your IDE console instead of a log file.
+
+#### Configuration
+Many SKSE plugins have configuration options, controlled via a config file. This plugin has a basic YAML config file
+that can customize the log levels of the logger. The parsing for the log file is handled by the Articuno serialization
+library, a next-generation serialization library that can easily map YAML, JSON, TOML, and other formats to C++
+classes. You can find the config logic in `src/Config.h` and `src/Config.cpp`. The logger initialization function gets
+the config object to query the log levels it should use.
 
 #### Messaging and Lifecycle Events
 SKSE plugins can exchange information without strong coupling using SKSE as a message bus. This allows a plugin to
