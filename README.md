@@ -11,6 +11,15 @@ A sample SKSE plugin developed in C++, built on the Fully Dynamic Game Engine pl
     * [Importing the Project into Your IDE](#importing-the-project-into-your-ide)
       * [Visual Studio](#visual-studio)
       * [Visual Studio Code](#visual-studio-code)
+* [Understanding the Project](#understanding-the-project)
+  * [Build Features](#build-features)
+    * [Vcpkg Integration](#vcpkg-integration)
+    * [Multi-Runtime Builds](#multi-runtime-builds)
+    * [Automatic Deployment](#automatic-deployment)
+    * [Unit Testing](#unit-testing)
+    * [Miscellaneous Elements](#miscellaneous-elements)
+  * [Plugin Structure](#plugin-structure)
+    * [Plugin Initialization](#plugin-initialization)
 
 ## Getting Started
 ### Environment Setup
@@ -203,21 +212,21 @@ Studio, Visual Studio Code, and CLion.
 The CMake configuration for the project addresses common issues with C++ development.
 
 ```cmake
-  add_compile_definitions(
-          UNICODE
-          _UNICODE
-          NOMINMAX
-          _AMD64_
-          WIN32_LEAN_AND_MEAN
-          _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
-  )
+add_compile_definitions(
+        UNICODE
+        _UNICODE
+        NOMINMAX
+        _AMD64_
+        WIN32_LEAN_AND_MEAN
+        _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
+)
 
-  if ($ENV{CLION_IDE})
-      add_compile_definitions(
-              __cpp_lib_char8_t         # Workaround for CLion bug.
-              __cpp_consteval           # Workaround for CLion bug.
-      )
-  endif ()
+if ($ENV{CLION_IDE})
+    add_compile_definitions(
+            __cpp_lib_char8_t         # Workaround for CLion bug.
+            __cpp_consteval           # Workaround for CLion bug.
+    )
+endif ()
 ```
 
 Interprocedural optimizations are enabled whenever possible, which improves performance by further optimizing the
@@ -250,3 +259,82 @@ find_package(CommonLibSSESamplePlugin CONFIG REQUIRED)
 # ...
 target_link_libraries(${PROJECT_NAME} PRIVATE CommonLibSSESamplePlugin)
 ```
+
+### Plugin Structure
+#### Plugin Initialization
+When SKSE starts, it searches `Data\SKSE\Plugins` for DLL files. Each DLL file is inspected to determine if it is a
+proper SKSE plugin. The way in which this is done differs between SE/VR and AE versions of SKSE, and this project is
+designed to support all of these cases.
+
+For AE versions of the executable, SKSE looks for static data in the DLL with the plugin metadata, in a structure named
+`SKSEPlugin_Version`.
+
+```c++
+#ifdef BUILD_AE
+EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
+    SKSE::PluginVersionData v;
+    v.PluginName(PluginName);
+    v.PluginVersion(PluginVersion);
+    v.UsesAddressLibrary(true);
+    return v;
+}();
+#endif
+```
+
+The data type in CommonLibSSE that represents this structure, `SKSE::PluginVersionData`, only exists in modern
+AE-targeting versions of the project, and is not present in legacy SE or VR editions. For this reason we use a macro to
+ensure this structure is excluded from the source for non-AE builds. This particular version specifies that it uses the
+address library. A plugin must specify the versions of the Skyrim runtime with which it is compatible. Two options are
+avaialable to indicate "all" versions: `UsesAddressLibrary` and `UsesSigScanning` (indicating dynamically scanning the
+code to find matches that appear to be the address you want). If neither of these is specified, then you can also list
+compatible specific versions of Skyrim with `ComaptibleVersions`, e.g.:
+
+```c++
+v.CompatibleVersions({ SKSE::RUNTIME_1_6_353, SKSE::RUNTIME_1_6_342 });
+```
+
+It is *strongly* encouraged that you use address library whenever possible.
+
+Older versions of SKSE for SE and VR use a different method to identify if a DLL is an SKSE plugin. They will look for a
+function called `SKSEPlugin_Query`, with the following signature:
+
+```c++
+EXTERN_C __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface&, SKSE::PluginInfo* pluginInfo);
+```
+
+If found, this function is called. For the DLL to be considered a valid SKSE plugin the function must:
+* Return `true`.
+* Set `pluginInfo->infoVersion` to `SKSE::PluginInfo::kVersion`.
+* Set `pluginInfo->version` to a non-zero integer.
+* Set `pluginInfo->name` to a non-null, non-empty string.
+
+Historically some initialization was often done by plugins in this function, such as initializing logging. In the modern
+plugin design this should be avoided, since it has no equivalent in the AE design.
+
+Once valid SKSE plugins have been identified, SKSE will call their `SKSEPlugin_Load` functions one at a time. This
+function must also be present or the SKSE plugin will not be loaded, and the function must have the following signature:
+
+```c++
+EXTERN_C __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse);
+```
+
+Like `SKSEPlugin_Query`, this function must return `true` or the plugin will not be loaded. It is in this function that
+the basic initialization of your plugin should be performed. Do not perform any operation here that depends on other
+plugins (which may not be loaded), or which do multithreading (which can cause a deadlock during DLL initialization).
+Instead, you can use the SKSE messaging system (discussed below) to perform such operations at later stages in Skyrim
+startup.
+
+Note that in this sample project, during initialization, there is a call to `SKSE::Init(skse)` in the load function.
+This is a CommonLibSSE function which initializes it's various interfaces that allow interacting with SKSE. As a general
+rule your load function should initialize logging before all else (to maximize how much code can have logging),
+followed by this function. Calls to other interfaces such as messaging, serialization, Papyrus binding, etc. all require
+this function to be called first.
+
+#### Messaging and Lifecycle Events
+
+#### Papyrus Bindings
+
+#### Serialization (the SKSE Cosave)
+
+#### Function Hooks
+

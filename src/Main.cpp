@@ -29,6 +29,7 @@ EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     v.PluginName(PluginName);
     v.PluginVersion(PluginVersion);
     v.UsesAddressLibrary(true);
+    v.CompatibleVersions({ RUNTIME_1_6_353, RUNTIME_1_6_342 });
     return v;
 }();
 #endif
@@ -50,7 +51,7 @@ EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
  * <code>SKSEPlugin_Load</code>.
  * </p>
  */
-EXTERN_C SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface&, PluginInfo* pluginInfo) {
+EXTERN_C SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface*, PluginInfo* pluginInfo) {
     pluginInfo->name = PluginName.data();
     pluginInfo->infoVersion = PluginInfo::kVersion;
     pluginInfo->version = PluginVersion.pack();
