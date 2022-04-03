@@ -1,5 +1,7 @@
 # CommonLibSSE Sample Plugin
-A sample SKSE plugin developed in C++, built on the Fully Dynamic Game Engine platform for Skyrim Special Edition.
+A sample SKSE plugin developed in C++. This project is meant to be used both as a template for modern SKSE plugin
+development, when starting a new project, or as a tutorial project for those new to CommonLibSSE development who want a
+complete and modern project from which to learn.
 
 ## Table of Contents
 * [Getting Started](#getting-started)
@@ -284,7 +286,7 @@ For AE versions of the executable, SKSE looks for static data in the DLL with th
 
 ```c++
 #ifdef BUILD_AE
-EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
+[[maybe_unused]] EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     SKSE::PluginVersionData v;
     v.PluginName(PluginName);
     v.PluginVersion(PluginVersion);
@@ -344,6 +346,31 @@ followed by this function. Calls to other interfaces such as messaging, serializ
 this function to be called first.
 
 #### Messaging and Lifecycle Events
+SKSE plugins can exchange information without strong coupling using SKSE as a message bus. This allows a plugin to
+broadcast a message with a particular message ID and arbitrary data attached to it, for which other plugins can register
+to listen. It is not common for plugins to broadcast information this way, however SKSE itself also broadcasts messages
+which are widely used to hook into Skyrim's lifecycle.
+
+When Skyrim starts, SKSE will begin by querying for SKSE plugins and then calling each plugin's `SKSEPlugin_Load`
+function. One all load functions are called it will signal a `SKSE::MessagingInterface::kPostLoad` message. Once all
+of those handlers have run, it will signal an `SKSE::MessagingInterface::kPostPostLoad` message. After that it waits
+until Skyrim has found all of its source files and initialized inputs, and signal
+`SKSE::MessagingInterface::kInputLoaded`. Finally, after all the ESM/ESL/ESP plugins are loaded, it will signal
+`SKSE::MessagingInterface::kDataLoaded` (warning: this will not fire again if the user reloads their load order using
+the in-game mod menu; such cases can be caught using addon frameworks such as Fully Dynamic Game Engine). In general,
+it is safe to begin using multithreaded operations and interacting with other plugins after
+`SKSE::MessagingInterface::kPostLoad` fires, and safe to start interacting with forms after
+`SKSE::MessagingInterface::kDataLoaded` fires.
+
+In addition to these messages, there are several other messages related to gameplay:
+* `SKSE::MessagingInterface::kNewGame`: the user has started a new game by selecting New Game at the main menu.
+* `SKSE::MessagingInterface::kSaveGame`: the user has saved their game.
+* `SKSE::MessagingInterface::kDeleteGame`: the user has deleted a save game.
+* `SKSE::MessagingInterface::kPostLoadGame`: the user has loaded a saved game.
+* `SKSE::MessagingInterface::kPreLoadGame`: the user has selected a saved game to load, but it has not loaded yet.
+
+In this sample project we initialize the function hooks in `kDataLoaded`; this is not necessary, as this can be done
+in `SKSEPlugin_Load`, but it is done here as a demonstration of how messaging works.
 
 #### Papyrus Bindings
 
@@ -453,3 +480,41 @@ formatting function should apply these rules, making them universal across all I
 This specific file uses a widely used standard for code formatting, but many such standards exist and many plugin
 authors use different ones. You can customize the file to find the style that you want for your plugin. The
 [Clang-Format Configurator](https://zed0.co.uk/clang-format-configurator/) is a useful tool for generating a file.
+
+#### Deploying a FOMOD
+Under `contrib/Distribution` is the FOMOD structure for a deployable mod that could be posted to e.g. Nexus Mods. The
+FOMOD configuration itself is located at `contrib/Distribution/fomod`. The other directories contain various portions of
+what will be installed. The FOMOD structure is designed to also allow the Papyrus sources held here to be the used for
+Papyrus development, while compiled Papyrus scripts and output DLL and PDB files are treated as build artifacts (i.e.
+they are removed on clean, and ignored by Git).
+
+To produce a FOMOD, build the full project. This includes building all the CMake build profiles, producing both debug
+and release builds for AE, SE, and VR. Then in Visual Studio Code run the debug, release, and test builds for the
+Papyrus scripts. This will populate all the output files necessary. Finally, produce an archive of the contents of
+`contrib/Distribution` with a format supported by common mod managers (7zip is recommended, using minimum compression
+for testing and maximum compression for a build uploaded to Nexus).
+
+The FOMOD included in this template has two pages with two choices to make: the first page selects which Skyrim
+runtime to target, and the second lets you select whether to install a debug or release build. Skyrim VR is
+automatically detected by the presence of its additional `SkyrimVR.esm` file, and therefore when installing for Skyrim
+VR it is the only choice available. If `SkyrimVR.esm` is not found then the Skyrim VR option is disabled, and the user
+has a choice between installing for AE or SE (which one is in use cannot be auto-detected with existing FOMOD features).
+
+#### Licensing
+Licensing is a commonly overlooked concern in the modding community. It is common to find projects with no license or an
+arbitrary license with no legal evaluation. In the Skyrim NG project we strongly recommend choosing an open source
+license for your project. This allows others to learn from and reuse your code for further development, and ensures that
+projects that are abandoned by their owners can be continued and maintained by others.
+
+This sample project uses Apache License 2.0, a high quality liberal open source license preferred by many large
+enterprises that use open source. It is similar to another popular license, the MIT license, but modernized to cover
+concerns such as patents and retaliation in the event of a copyright lawsuit. Other excellent options are the GPL
+license (if you want a strong "copyleft" license) or the LGPL license.
+
+Which license you decide your project should use, it is important that you put its text in the `LICENSE` file, and
+update `version.rc.in` to include your license. This ensures the license restrictions are clear to any who use your
+project and that the license can be detected and displayed properly on sites like GitHub, GitLab, and other code hosting
+services.
+
+If you are keeping the Apache License 2.0 `LICENSE` file for your project and using this sample plugin as a template, be
+sure to update line 190 with your custom information.

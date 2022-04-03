@@ -24,12 +24,11 @@ namespace {
  * supported.
  * </p>
  */
-EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
+EXTERN_C [[maybe_unused]] SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     SKSE::PluginVersionData v;
     v.PluginName(PluginName);
     v.PluginVersion(PluginVersion);
     v.UsesAddressLibrary(true);
-    v.CompatibleVersions({ RUNTIME_1_6_353, RUNTIME_1_6_342 });
     return v;
 }();
 #endif
@@ -51,7 +50,7 @@ EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
  * <code>SKSEPlugin_Load</code>.
  * </p>
  */
-EXTERN_C SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface*, PluginInfo* pluginInfo) {
+EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface*, PluginInfo* pluginInfo) {
     pluginInfo->name = PluginName.data();
     pluginInfo->infoVersion = PluginInfo::kVersion;
     pluginInfo->version = PluginVersion.pack();
@@ -139,61 +138,8 @@ namespace {
         if (GetPapyrusInterface()->Register(Sample::RegisterHitCounter)) {
             log::debug("Papyrus functions bound.");
         } else {
-            log::error("Failure to register Papyrus bindings.");
+            stl::report_and_fail("Failure to register Papyrus bindings.");
         }
-    }
-
-    /**
-     * Register to listen for messages.
-     *
-     * <p>
-     * SKSE has a messaging system to allow for loosely coupled messaging. This means you don't need to know about or
-     * link with a message sender to receive their messages. SKSE itself will send messages for common Skyrim lifecycle
-     * events, such as when SKSE plugins are done loading, or when all ESP plugins are loaded.
-     * </p>
-     *
-     * <p>
-     * Here we register a listener for SKSE itself (because we have not specified a message source). Plugins can send
-     * their own messages that other plugins can listen for as well, although that is not demonstrated in this example
-     * and is not common.
-     * </p>
-     *
-     * <p>
-     * The data included in the message is provided as only a void pointer. It's type depends entirely on the type of
-     * message, and some messages have no data (<code>dataLen</code> will be zero).
-     * </p>
-     */
-    void InitializeMessaging() {
-        GetMessagingInterface()->RegisterListener([](MessagingInterface::Message* message) {
-            switch (message->type) {
-                // Skyrim lifecycle events.
-                case MessagingInterface::kPostLoad: // Called after all plugins have finished running SKSEPlugin_Load.
-                    // It is now safe to do multithreaded operations, or operations against other plugins.
-                    break;
-                case MessagingInterface::kPostPostLoad: // Called after all kPostLoad message handlers have run.
-                    break;
-                case MessagingInterface::kInputLoaded: // Called when all game data has been found.
-                    break;
-                case MessagingInterface::kDataLoaded: // All ESM/ESL/ESP plugins have loaded, main menu is now active.
-                    // It is now safe to access form data.
-                    break;
-
-                // Skyrim game events.
-                case MessagingInterface::kNewGame: // Player starts a new game from main menu.
-                    break;
-                case MessagingInterface::kPreLoadGame: // Player selected a game to load, but it hasn't loaded yet.
-                    // Data will be the name of the loaded save.
-                    break;
-                case MessagingInterface::kPostLoadGame: // Player's selected save game has finished loading.
-                    // Data will be a boolean indicating whether the load was successful.
-                    break;
-                case MessagingInterface::kSaveGame: // The player has saved a game.
-                    // Data will be the save name.
-                    break;
-                case MessagingInterface::kDeleteGame: // The player deleted a saved game from within the load menu.
-                    break;
-            }
-        });
     }
 
     /**
@@ -217,7 +163,58 @@ namespace {
         auto& trampoline = GetTrampoline();
         trampoline.create(64);
         log::trace("Trampoline initialized.");
+
         Sample::InitializeHook(trampoline);
+    }
+
+    /**
+     * Register to listen for messages.
+     *
+     * <p>
+     * SKSE has a messaging system to allow for loosely coupled messaging. This means you don't need to know about or
+     * link with a message sender to receive their messages. SKSE itself will send messages for common Skyrim lifecycle
+     * events, such as when SKSE plugins are done loading, or when all ESP plugins are loaded.
+     * </p>
+     *
+     * <p>
+     * Here we register a listener for SKSE itself (because we have not specified a message source). Plugins can send
+     * their own messages that other plugins can listen for as well, although that is not demonstrated in this example
+     * and is not common.
+     * </p>
+     *
+     * <p>
+     * The data included in the message is provided as only a void pointer. It's type depends entirely on the type of
+     * message, and some messages have no data (<code>dataLen</code> will be zero).
+     * </p>
+     */
+    void InitializeMessaging() {
+        if (!GetMessagingInterface()->RegisterListener([](MessagingInterface::Message* message) {
+            switch (message->type) {
+                // Skyrim lifecycle events.
+                case MessagingInterface::kPostLoad: // Called after all plugins have finished running SKSEPlugin_Load.
+                    // It is now safe to do multithreaded operations, or operations against other plugins.
+                case MessagingInterface::kPostPostLoad: // Called after all kPostLoad message handlers have run.
+                case MessagingInterface::kInputLoaded: // Called when all game data has been found.
+                    break;
+                case MessagingInterface::kDataLoaded: // All ESM/ESL/ESP plugins have loaded, main menu is now active.
+                    // It is now safe to access form data.
+                    InitializeHooking();
+                    break;
+
+                // Skyrim game events.
+                case MessagingInterface::kNewGame: // Player starts a new game from main menu.
+                case MessagingInterface::kPreLoadGame: // Player selected a game to load, but it hasn't loaded yet.
+                    // Data will be the name of the loaded save.
+                case MessagingInterface::kPostLoadGame: // Player's selected save game has finished loading.
+                    // Data will be a boolean indicating whether the load was successful.
+                case MessagingInterface::kSaveGame: // The player has saved a game.
+                    // Data will be the save name.
+                case MessagingInterface::kDeleteGame: // The player deleted a saved game from within the load menu.
+                    break;
+            }
+        })) {
+            stl::report_and_fail("Unable to register message listener.");
+        }
     }
 }
 
@@ -231,14 +228,13 @@ namespace {
  * tasks.
  * </p>
  */
-EXTERN_C SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Load(const LoadInterface* skse) {
+EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Load(const LoadInterface* skse) {
     InitializeLogging();
     log::info("{} is loading...", PluginName);
     Init(skse);
     InitializeMessaging();
     InitializeSerialization();
     InitializePapyrus();
-    InitializeHooking();
 
     log::info("{} has finished loading.", PluginName);
     return true;
