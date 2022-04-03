@@ -33,6 +33,9 @@ bool HitCounterManager::Untrack(Actor* target) {
 }
 
 void HitCounterManager::Increment(Actor* target, int32_t by) {
+    if (!target) {
+        return;
+    }
     std::unique_lock lock(_lock);
     if (!_trackedActors.contains(target)) {
         return;
@@ -52,7 +55,7 @@ void HitCounterManager::OnRevert(SerializationInterface*) {
 std::optional<int32_t> HitCounterManager::GetHitCount(Actor* target) const noexcept {
     std::unique_lock lock(_lock);
     auto result = _hitCounts.find(target);
-    if (result != _hitCounts.end()) {
+    if (result == _hitCounts.end()) {
         return {};
     }
     return result->second;

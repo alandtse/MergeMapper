@@ -115,7 +115,7 @@ namespace {
         serde->SetUniqueID('SMPL');
         serde->SetSaveCallback(Sample::HitCounterManager::OnGameSaved);
         serde->SetRevertCallback(Sample::HitCounterManager::OnRevert);
-        serde->SetLoadCallback(Sample::HitCounterManager::OnRevert);
+        serde->SetLoadCallback(Sample::HitCounterManager::OnGameLoaded);
         log::trace("Cosave serialization initialized.");
     }
 

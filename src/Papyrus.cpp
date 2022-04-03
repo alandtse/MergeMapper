@@ -23,13 +23,17 @@ namespace {
 #else
     static_assert(false, "The build must target Skyrim AE, SE, or VR.");
 #endif
+
+    int32_t* PopulateHitData(Actor* target, char* unk0);
+
     // The <code>Relocation</code> class references something in the Skyrim engine (e.g. static data, a function, etc.)
     // that can be relocated in memory at runtime. Windows will rebase the memory of the Skyrim process to a random one,
     // so we cannot hard-code the memory address. Relocation will rebase your memory offset to the base memory address
     // of the Skyrim process, so that it adjusts on every run. However, it is recommended not to provide a memory
     // offset, but rather a <code>REL::ID</code> to lookup the offset dynamically with Address Library.
-    REL::Relocation<void(HitData*, Actor*, Actor*, InventoryEntryData*)> fn(id);
-    void(*OriginalPopulateHitData)(HitData*, Actor*, Actor*, InventoryEntryData*);
+    REL::Relocation<decltype(PopulateHitData)> fn(id.address() + 0x42);
+
+    REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
 
     // Start handlers for Papyrus functions.
     //
@@ -69,9 +73,9 @@ namespace {
         return HitCounterManager::GetSingleton().GetHitCount(actor).value_or(0);
     }
 
-    void PopulateHitData(HitData* self, Actor* aggressor, Actor* target, InventoryEntryData* inv) {
-        OriginalPopulateHitData(self, aggressor, target, inv);
+    int32_t* PopulateHitData(Actor* target, char* unk0) {
         HitCounterManager::GetSingleton().RegisterHit(target);
+        return OriginalPopulateHitData(target, unk0);
     }
 }
 
@@ -100,7 +104,6 @@ void Sample::InitializeHook(Trampoline& trampoline) {
     // The trampoline pointed to contains any instructions from the original function we overwrote and a call to the
     // instruction that comes after, so that if we call that address as a function, we are in effect calling the
     // original code.
-    OriginalPopulateHitData = reinterpret_cast<decltype(OriginalPopulateHitData)>
-        (trampoline.write_call<5>(fn.address(), reinterpret_cast<uintptr_t>(PopulateHitData)));
+    OriginalPopulateHitData = trampoline.write_call<5>(fn.address(), reinterpret_cast<uintptr_t>(PopulateHitData));
     log::debug("Hit data hook written.");
 }
