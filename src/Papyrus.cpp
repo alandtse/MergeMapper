@@ -11,17 +11,14 @@ namespace {
     constexpr std::string_view PapyrusClass = "HitCounter";
 
     // The ID here is the ID of the function in Address Library. We use it to not be tied to the specific Skyrim
-    // executable version. However there are still three incompatible databases of addresses, for Skyrim 1.5.x (pre-AE),
-    // Skyrim 1.6.x (post-AE), and Skyrim VR. This sample supports all three by allowing you to build a separate DLL for
-    // each and changing the ID used with a macro.
+    // executable version. However, there are still three incompatible databases of addresses, for Skyrim 1.5.x
+    // (pre-AE), Skyrim 1.6.x (post-AE), and Skyrim VR. This sample supports all three by allowing you to build a
+    // separate DLL for each and changing the ID used with a macro. The SE ID is used for Skyrim VR as well, since the
+    // VR address library uses SE ID's but maps them to a VR offset.
 #ifdef BUILD_AE
     REL::ID id(44001);
-#elif BUILD_SE
-    REL::ID id(42832);
-#elif BUILD_VR
-    REL::ID id(0); // TODO: Find ID for VR.
 #else
-    static_assert(false, "The build must target Skyrim AE, SE, or VR.");
+    REL::ID id(42832);
 #endif
 
     int32_t* PopulateHitData(Actor* target, char* unk0);

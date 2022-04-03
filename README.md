@@ -185,18 +185,10 @@ otherwise remains the same, save for the different address library IDs between t
 ```c++
 #ifdef BUILD_AE
     REL::ID id(44001);
-#elif BUILD_SE
-    REL::ID id(42832);
-#elif BUILD_VR
-    REL::ID id(0); // TODO: Find ID for VR.
 #else
-    static_assert(false, "The build must target Skyrim AE, SE, or VR.");
+    REL::ID id(42832);
 #endif
 ```
-
-Note that some projects can achieve clearer portability (e.g. if using Fully Dynamic Game Engine it is possible to have
-not only one codebase, but a single DLL, with all three IDs defined in one line, and the runtime dynamically selects the
-correct one). However, this sample project shows strict use of only CommonLibSSE and minimal additional dependencies.
 
 The correct Vcpkg features are chosen via the CMake build profile. Build profiles are defined in the `CMakePresets.json`
 file, which map build types (e.g. `Debug-AE`) to the proper set of Vcpkg features (e.g. `plugin-ae`).
@@ -458,12 +450,8 @@ Address Library's databases. We see this being done in this project:
 ```c++
 #ifdef BUILD_AE
     REL::ID id(44001);
-#elif BUILD_SE
-    REL::ID id(42832);
-#elif BUILD_VR
-    REL::ID id(0); // TODO: Find ID for VR.
 #else
-    static_assert(false, "The build must target Skyrim AE, SE, or VR.");
+    REL::ID id(42832);
 #endif
 
 int32_t* PopulateHitData(Actor* target, char* unk0);
@@ -473,15 +461,18 @@ REL::Relocation<decltype(PopulateHitData)> fn(id.address() + 0x42);
 REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
 ```
 
-Here we have the proper Address Library ID for each Skyrim runtime type (AE, SE, or VR). We then use the
-`REL::Relocation` type to get a strongly-typed reference to a memory address. Here we add `0x42` to the address
-associated with that ID, because the ID is the ID of the memory address where the function starts. In this case we are
-actually hooking a call to another function which occurs `0x42` bytes past the start of the function. The signature of
-that function is `int32_t*(Actor*, char*)`, and we define the function that will intercept that call as well as using
-that type for the `REL::Relocation` that maps to that call site. We also keep a second `REL::Relocation` which we assign
-when we make the `write_call<5>` call, which points to the resulting trampoline function. We can use this to call the
-trampoline, which in effect makes the original function call. This way we can intercept the call while still letting it
-proceed normally, instead of completely replacing the original call.
+Here we have the proper Address Library ID for each Skyrim runtime type (AE, SE, or VR). Notably there is no specific
+VR ID; the VR Address Library uses SE ID's, but maps them to VR offsets. This only works for a subset of IDs that have
+been crowdsourced, however the correct mapping exists for this ID so VR support is automatic.
+
+We then use the `REL::Relocation` type to get a strongly-typed reference to a memory address. Here we add `0x42` to the
+address associated with that ID, because the ID is the ID of the memory address where the function starts. In this case=
+we are actually hooking a call to another function which occurs `0x42` bytes past the start of the function. The
+signature of that function is `int32_t*(Actor*, char*)`, and we define the function that will intercept that call as
+well as using that type for the `REL::Relocation` that maps to that call site. We also keep a second `REL::Relocation`
+which we assign when we make the `write_call<5>` call, which points to the resulting trampoline function. We can use
+this to call the trampoline, which in effect makes the original function call. This way we can intercept the call while
+still letting it proceed normally, instead of completely replacing the original call.
 
 In this case the function we intercepted is a call done while populating data related to hitting something. Whenever
 this function is called, it is because something hit an actor. This lets us get the actor and increment its hit count
