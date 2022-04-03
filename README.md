@@ -17,9 +17,17 @@ A sample SKSE plugin developed in C++, built on the Fully Dynamic Game Engine pl
     * [Multi-Runtime Builds](#multi-runtime-builds)
     * [Automatic Deployment](#automatic-deployment)
     * [Unit Testing](#unit-testing)
+    * [DLL Metadata](#dll-metadata)
     * [Miscellaneous Elements](#miscellaneous-elements)
   * [Plugin Structure](#plugin-structure)
     * [Plugin Initialization](#plugin-initialization)
+    * [Messaging and Lifecycle Events](#messaging-and-lifecycle-events)
+    * [Papyrus Bindings](#papyrus-bindings)
+    * [Papyrus Development](#papyrus-development)
+    * [Serialization (the SKSE Cosave)](#serialization-the-skse-cosave)
+    * [Function Hooks](#function-hooks)
+  * [Other Features](#other-features)
+    * [Source Code Formatting](#source-code-formatting)
 
 ## Getting Started
 ### Environment Setup
@@ -208,6 +216,11 @@ GTest unit tests; running this executable will run the tests. See `test/HitCount
 is the most widely used unit testing framework with wide support integrated into IDEs, including support by Visual
 Studio, Visual Studio Code, and CLion.
 
+#### DLL Metadata
+This project comes with a `version.rc.in` file which generates metadata for your output. This embeds things like your
+project's name, version number, and licensing into the DLL file so it shows up in the Windows properties dialog for
+the DLL.
+
 #### Miscellaneous Elements
 The CMake configuration for the project addresses common issues with C++ development.
 
@@ -334,6 +347,8 @@ this function to be called first.
 
 #### Papyrus Bindings
 
+#### Papyrus Development
+
 #### Serialization (the SKSE Cosave)
 
 #### Function Hooks
@@ -428,3 +443,13 @@ int32_t* PopulateHitData(Actor* target, char* unk0) {
 As we see we intercept the function call Skyrim was already doing to see the target of the hit, and can therefore
 increment it's hit count. After that we pass the call along to the original function, letting it continue as it
 originally did.
+
+### Other Features
+#### Source Code Formatting
+The project ships with `.clang-format` file, which defines the source code formatting standard. Clang's format tool can
+automatically format your source code, and this tool is also integrated into common IDE's. Using your IDE's automatic
+formatting function should apply these rules, making them universal across all IDE's.
+
+This specific file uses a widely used standard for code formatting, but many such standards exist and many plugin
+authors use different ones. You can customize the file to find the style that you want for your plugin. The
+[Clang-Format Configurator](https://zed0.co.uk/clang-format-configurator/) is a useful tool for generating a file.
