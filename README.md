@@ -337,4 +337,94 @@ this function to be called first.
 #### Serialization (the SKSE Cosave)
 
 #### Function Hooks
+Function hooking is the act of intercepting a function, or a function call site, and replacing the functionality with
+your own. This is a common way of performing advanced operations that Skyrim's normal interfaces through Papyrus do not
+support. Function hooking and reverse engineering is a broad topic and will not be covered in its totality in this
+tutorial, but how it can be accomplished with CommonLibSSE will be.
 
+Hooking a function is usually done in one of two ways: either the function itself is hooked, or a specific call or
+branch instruction is hooked. The former will replace a function completely throughout the application. The later will
+cause a single call to be redirected, but will not affect other calls to the function. SKSE and CommonLibSSE provide
+functionality for the later case -- hooking function call sites -- but not the former, hooking functions themselves.
+There are other libraries easily available which can perform function hooking. Because call site hooking is what is
+targeted by CommonLibSSE, that is what is used in this project (note that sometimes either method can be used, but often
+you specifically want to use one method or the other).
+
+An important concept for hooking functions is a *trampoline*. When you hook a function you are overwriting the
+executable code in memory. This necessarily replaces existing code. When doing this, a trampoline is a function that
+copies the overwritten code as well as a call to the point where the code would have continued after those instructions
+were executed. This takes memory, and so we must allocate memory for it. CommonLibSSE has a `SKSE::Trampoline` type for
+this. As many trampolines as you want can be created, but it's common to use a singleton instance with enough space for
+all generated code as needed. We do this allocation in `Main.cpp`:
+
+```c++
+void InitializeHooking() {
+    auto& trampoline = SKSE::GetTrampoline();
+    trampoline.create(64);
+    // ...
+}
+```
+
+This allocates 64 bytes of space within the singleton trampoline, enough for the use within this sample project. You can
+enable trace level logging to see how much space is used by your trampoline in your logs and find out if you need to
+allocate more space.
+
+To hook a call site, you must find the call or branch instruction you want to replace with your own, and then call
+`trampoline.write_call<5>` for calls or `trampoline.write_branch<5>` for branches (note: the `5` here indicates that the
+instruction being replaced is 5 bytes long; there can also be `write_call<6>` and `write_branch<6>` for 6-byte
+instructions, although this is rare). The first argument should be the address of the instruction being replaced, and
+the second is the address of the function that will be called in its place. The result is an address offset to the
+trampoline function generated.
+
+```c++
+OriginalPopulateHitData = trampoline.write_call<5>(fn.address(), reinterpret_cast<uintptr_t>(PopulateHitData));
+```
+
+Whenever possible with SKSE development we want to work with Address Library IDs. This allows the resulting DLL to be
+portable across different Skyrim executable versions, even though the exact memory offsets where we would hook will
+change between releases. That is because Address Library assigns IDs, which persist across releases, to each function
+and other objects in the executable. These IDs are used to dynamically lookup the true memory offset at runtime, using
+Address Library's databases. We see this being done in this project:
+
+```c++
+#ifdef BUILD_AE
+    REL::ID id(44001);
+#elif BUILD_SE
+    REL::ID id(42832);
+#elif BUILD_VR
+    REL::ID id(0); // TODO: Find ID for VR.
+#else
+    static_assert(false, "The build must target Skyrim AE, SE, or VR.");
+#endif
+
+int32_t* PopulateHitData(Actor* target, char* unk0);
+
+REL::Relocation<decltype(PopulateHitData)> fn(id.address() + 0x42);
+
+REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
+```
+
+Here we have the proper Address Library ID for each Skyrim runtime type (AE, SE, or VR). We then use the
+`REL::Relocation` type to get a strongly-typed reference to a memory address. Here we add `0x42` to the address
+associated with that ID, because the ID is the ID of the memory address where the function starts. In this case we are
+actually hooking a call to another function which occurs `0x42` bytes past the start of the function. The signature of
+that function is `int32_t*(Actor*, char*)`, and we define the function that will intercept that call as well as using
+that type for the `REL::Relocation` that maps to that call site. We also keep a second `REL::Relocation` which we assign
+when we make the `write_call<5>` call, which points to the resulting trampoline function. We can use this to call the
+trampoline, which in effect makes the original function call. This way we can intercept the call while still letting it
+proceed normally, instead of completely replacing the original call.
+
+In this case the function we intercepted is a call done while populating data related to hitting something. Whenever
+this function is called, it is because something hit an actor. This lets us get the actor and increment its hit count
+for our sample hit counter.
+
+```c++
+int32_t* PopulateHitData(Actor* target, char* unk0) {
+    HitCounterManager::GetSingleton().RegisterHit(target);
+    return OriginalPopulateHitData(target, unk0);
+}
+```
+
+As we see we intercept the function call Skyrim was already doing to see the target of the hit, and can therefore
+increment it's hit count. After that we pass the call along to the original function, letting it continue as it
+originally did.
