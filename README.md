@@ -110,3 +110,143 @@ your first SKSE plugin! You can find the DLL in the project directory under `bui
 
 #### Visual Studio Code
 
+## Understanding the Project
+### Build Features
+#### Vcpkg Integration
+Like many SKSE projects, this sample project uses Vcpkg to manage dependencies that are needed to build and run the
+project. However one advanced feature seen here is the use of Vcpkg to manage even Skyrim-oriented dependencies.
+Traditionally projects like CommonLibSSE were included via a Git submodule. This has a number of disadvantages. It
+subjects CommonLibSSE to the build configuration for your project. It also requires you to list all the transitive
+dependencies in your own `vcpkg.json` file.
+
+To solve this problem the Skyrim NG project has produced a public repository, available for all in the Skyrim and
+Fallout 4 communities, to use for their development. This repository includes the modern head of CommonLibSSE
+development (called simply `commonlibsse`), as well as a legacy build that has modern features but maintains
+compatibility with pre-AE versions of Skyrim SE (called `commonlibsse-legacy`, and based on powerof3's fork of
+CommonLibSSE), and a modernized version of CommonLibVR that has been adapted for CMake builds (based on alandtse's
+fork of CommonLibVR).
+
+```json
+{
+    "registries": [
+        {
+            "kind": "git",
+            "repository": "https://gitlab.com/colorglass/vcpkg-colorglass",
+            "baseline": "926654b35b42c50f8f6928c60d76acc4b0a20213",
+            "packages": [
+              // ...
+            ]
+        }
+    ]
+}
+
+```
+
+Furthermore, this Vcpkg repository includes the ability to build and link to SKSE itself, as well as the ability to
+deploy the original Bethesda script sources and SKSE versions of those sources. Using the `bethesda-skyrim-scripts`
+port will cause Vcpkg to find your Skyrim installation via the registry and extract the script sources locally into
+your project build directory, allowing you to do local Papyrus development. SKSE scripts are also download and extracted
+when using the `skse` port's `scripts` feature.
+
+The availability of these projects is handled by the `vcpkg-configuration.json` file, which brings in the Skyrim NG
+repository hosted by Color-Glass Studios, and is a big step forward in streamlining the development process.
+
+#### Multi-Runtime Builds
+A major problem with developing for modern Skyrim is the fragmentation of Skyrim runtimes between pre-AE executables,
+post-AE executables, and Skyrim VR. This project demonstrates how to achieve support for all three in a single codebase.
+Through the Vcpkg and CMake configuration, there can be SE/AE/VR variations of the plugin built. The separation fo these
+features is handled in `vcpkg.json`, where each version of the plugin uses a different version of the CommonLibSSE ports
+(`commonlibsse` for AE, `commonlibsse-legacy` for SE, and `commonlibvr` for VR). The source code for the project
+otherwise remains the same, save for the different address library IDs between them, as found in `Papyrus.cpp`:
+
+```c++
+#ifdef BUILD_AE
+    REL::ID id(44001);
+#elif BUILD_SE
+    REL::ID id(42832);
+#elif BUILD_VR
+    REL::ID id(0); // TODO: Find ID for VR.
+#else
+    static_assert(false, "The build must target Skyrim AE, SE, or VR.");
+#endif
+```
+
+Note that some projects can achieve clearer portability (e.g. if using Fully Dynamic Game Engine it is possible to have
+not only one codebase, but a single DLL, with all three IDs defined in one line, and the runtime dynamically selects the
+correct one). However, this sample project shows strict use of only CommonLibSSE and minimal additional dependencies.
+
+The correct Vcpkg features are chosen via the CMake build profile. Build profiles are defined in the `CMakePresets.json`
+file, which map build types (e.g. `Debug-AE`) to the proper set of Vcpkg features (e.g. `plugin-ae`).
+
+#### Automatic Deployment
+When building the sample project, build results are automatically deployed to `contrib/Distribution`. This directory
+has the FOMOD installer for the project. DLL and PDB files are copied automatically to the appropriate directory for the
+build type and target runtime (AE, SE, or VR). In addition, the CMake clean action has been extended to clean this files
+in the FOMOD directory. The project also integrates with the Papyrus extension for Visual Studio Code. When performing a
+build of the Papyrus scripts the result will be copied to the appropriate directory for Papyrus scripts (the compiled
+scripts are also cleaned by a CMake clean).
+
+You can also incrementally build to a mod directory in Mod Organizer 2. The CMake build is configured to deploy the DLL
+and PDB files to an MO2 mod directory if one has been specified by environment variables. These variables are called
+`CommonLibSSESamplePluginTargetAE`, `CommonLibSSESamplePluginTargetSE`, and `CommonLibSSESamplePluginTargetVR` for AE,
+SE, and VR targets respectively. These should be set to point to the base directory for the MO2 mod you want to deploy
+the files to (do not include `SKSE/Plugins` at the end). This allows you to simply build after making changes and
+immediately be able to run Skyrim from MO2 to see the results.
+
+#### Unit Testing
+The project comes with built-in support for running unit tests with GTest. The build produces an executable with all
+GTest unit tests; running this executable will run the tests. See `test/HitCounterManagerTest.cpp` for an example. GTest
+is the most widely used unit testing framework with wide support integrated into IDEs, including support by Visual
+Studio, Visual Studio Code, and CLion.
+
+#### Miscellaneous Elements
+The CMake configuration for the project addresses common issues with C++ development.
+
+```cmake
+  add_compile_definitions(
+          UNICODE
+          _UNICODE
+          NOMINMAX
+          _AMD64_
+          WIN32_LEAN_AND_MEAN
+          _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
+  )
+
+  if ($ENV{CLION_IDE})
+      add_compile_definitions(
+              __cpp_lib_char8_t         # Workaround for CLion bug.
+              __cpp_consteval           # Workaround for CLion bug.
+      )
+  endif ()
+```
+
+Interprocedural optimizations are enabled whenever possible, which improves performance by further optimizing the
+output at link-time:
+
+```cmake
+check_ipo_supported(RESULT USE_IPO OUTPUT IPO_OUTPUT)
+if (USE_IPO)
+    message("Enabling interprocedural optimizations.")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+else ()
+    message("Interprocedural optimizations are not supported.")
+endif ()
+```
+
+CMake targets are generated for install, allowing the project to be consumed by other CMake projects:
+
+```cmake
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/Sample"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(TARGETS ${PROJECT_NAME}
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+```
+
+This allows another project that wants to depend on this one to configure itself automatically, like so:
+
+```cmake
+find_package(CommonLibSSESamplePlugin CONFIG REQUIRED)
+# ...
+target_link_libraries(${PROJECT_NAME} PRIVATE CommonLibSSESamplePlugin)
+```

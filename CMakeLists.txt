@@ -27,7 +27,7 @@ set(sources
         src/Papyrus.cpp)
 
 set(tests
-        test/Test.cpp
+        test/HitCounterManager.cpp
 )
 
 source_group(
@@ -267,5 +267,6 @@ if (BUILD_TESTS)
             src/PCH.h
     )
 
-    gtest_discover_tests(${PROJECT_NAME}Tests)
+    # TODO: When Address Library database loading is fixed.
+    #gtest_discover_tests(${PROJECT_NAME}Tests PROPERTIES ENVIRONMENT "SKSE_RUNTIME=$<TARGET_FILE:${PROJECT_NAME}>")
 endif ()
