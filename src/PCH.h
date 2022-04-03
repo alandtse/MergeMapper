@@ -96,12 +96,10 @@
 #include <version>
 
 #define SPDLOG_COMPILED_LIB
-#define _INC_WINDOWS
-#include <SKSE/Impl/PCH.h>
+//#include <SKSE/Impl/PCH.h>
 #include <RE/Skyrim.h>
 #include <SKSE/SKSE.h>
 #include <REL/Relocation.h>
-#undef _INC_WINDOWS
 
 #include <ShlObj_core.h>
 #include <Windows.h>

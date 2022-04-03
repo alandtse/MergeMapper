@@ -8,12 +8,6 @@ using namespace SKSE;
 using namespace SKSE::log;
 using namespace SKSE::stl;
 
-namespace {
-    constexpr std::string_view PluginName = "Sample Plugin";
-    constexpr REL::Version PluginVersion = {1, 0, 0, 0};
-}
-
-#ifdef BUILD_AE
 /**
  * Declaration of the plugin metadata.
  *
@@ -26,12 +20,11 @@ namespace {
  */
 EXTERN_C [[maybe_unused]] SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     SKSE::PluginVersionData v;
-    v.PluginName(PluginName);
-    v.PluginVersion(PluginVersion);
+    v.PluginName("Sample Plugin");
+    v.PluginVersion({1, 0, 0, 0});
     v.UsesAddressLibrary(true);
     return v;
 }();
-#endif
 
 /**
  * Callback used by SKSE for Skyrim runtime versions 1.5.x to detect if a DLL is an SKSE plugin.
@@ -51,9 +44,9 @@ EXTERN_C [[maybe_unused]] SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []()
  * </p>
  */
 EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface*, PluginInfo* pluginInfo) {
-    pluginInfo->name = PluginName.data();
+    pluginInfo->name = SKSEPlugin_Version.pluginName;
     pluginInfo->infoVersion = PluginInfo::kVersion;
-    pluginInfo->version = PluginVersion.pack();
+    pluginInfo->version = SKSEPlugin_Version.pluginVersion;
     return true;
 }
 
@@ -74,7 +67,7 @@ namespace {
         if (!path) {
             report_and_fail("Unable to lookup SKSE logs directory.");
         }
-        *path /= PluginName;
+        *path /= SKSEPlugin_Version.pluginName;
         *path += L".log";
 
         std::shared_ptr<spdlog::logger> log;
@@ -230,12 +223,12 @@ namespace {
  */
 EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Load(const LoadInterface* skse) {
     InitializeLogging();
-    log::info("{} is loading...", PluginName);
+    log::info("{} is loading...", SKSEPlugin_Version.pluginName);
     Init(skse);
     InitializeMessaging();
     InitializeSerialization();
     InitializePapyrus();
 
-    log::info("{} has finished loading.", PluginName);
+    log::info("{} has finished loading.", SKSEPlugin_Version.pluginName);
     return true;
 }

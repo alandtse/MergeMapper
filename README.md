@@ -143,11 +143,9 @@ subjects CommonLibSSE to the build configuration for your project. It also requi
 dependencies in your own `vcpkg.json` file.
 
 To solve this problem the Skyrim NG project has produced a public repository, available for all in the Skyrim and
-Fallout 4 communities, to use for their development. This repository includes the modern head of CommonLibSSE
-development (called simply `commonlibsse`), as well as a legacy build that has modern features but maintains
-compatibility with pre-AE versions of Skyrim SE (called `commonlibsse-legacy`, and based on powerof3's fork of
-CommonLibSSE), and a modernized version of CommonLibVR that has been adapted for CMake builds (based on alandtse's
-fork of CommonLibVR).
+Fallout 4 communities, to use for their development. This repository includes a modern head of CommonLibSSE
+development (called `commonlibsse-ng`). This version of CommonLibSSE uniquely is capable of working with any version of
+Skyrim, not only at build-time, but at runtime as well.
 
 ```json
 {
@@ -177,35 +175,22 @@ repository hosted by Color-Glass Studios, and is a big step forward in streamlin
 #### Multi-Runtime Builds
 A major problem with developing for modern Skyrim is the fragmentation of Skyrim runtimes between pre-AE executables,
 post-AE executables, and Skyrim VR. This project demonstrates how to achieve support for all three in a single codebase.
-Through the Vcpkg and CMake configuration, there can be SE/AE/VR variations of the plugin built. The separation fo these
-features is handled in `vcpkg.json`, where each version of the plugin uses a different version of the CommonLibSSE ports
-(`commonlibsse` for AE, `commonlibsse-legacy` for SE, and `commonlibvr` for VR). The source code for the project
-otherwise remains the same, save for the different address library IDs between them, as found in `Papyrus.cpp`:
-
-```c++
-#ifdef BUILD_AE
-    REL::ID id(44001);
-#else
-    REL::ID id(42832);
-#endif
-```
-
-The correct Vcpkg features are chosen via the CMake build profile. Build profiles are defined in the `CMakePresets.json`
-file, which map build types (e.g. `Debug-AE`) to the proper set of Vcpkg features (e.g. `plugin-ae`).
+The version of CommonLibSSE used in this project is a fork from the Skyrim NG project called CommonLibSSE-NG, which
+allows a single version of the compiled library to work with Skyrim AE, SE, or VR. Therefore, your resulting DLL will be
+able to work with any version of Skyrim. Users will not need to choose a correct version of the DLL to download and
+install.
 
 #### Automatic Deployment
 When building the sample project, build results are automatically deployed to `contrib/Distribution`. This directory
-has the FOMOD installer for the project. DLL and PDB files are copied automatically to the appropriate directory for the
-build type and target runtime (AE, SE, or VR). In addition, the CMake clean action has been extended to clean this files
-in the FOMOD directory. The project also integrates with the Papyrus extension for Visual Studio Code. When performing a
-build of the Papyrus scripts the result will be copied to the appropriate directory for Papyrus scripts (the compiled
-scripts are also cleaned by a CMake clean).
+has the FOMOD installer for the project. DLL and PDB files are copied automatically. In addition, the CMake clean action
+has been extended to clean this files in the FOMOD directory. The project also integrates with the Papyrus extension for
+Visual Studio Code. When performing a build of the Papyrus scripts the result will be copied to the appropriate
+directory for Papyrus scripts (the compiled scripts are also cleaned by a CMake clean).
 
 You can also incrementally build to a mod directory in Mod Organizer 2. The CMake build is configured to deploy the DLL
-and PDB files to an MO2 mod directory if one has been specified by environment variables. These variables are called
-`CommonLibSSESamplePluginTargetAE`, `CommonLibSSESamplePluginTargetSE`, and `CommonLibSSESamplePluginTargetVR` for AE,
-SE, and VR targets respectively. These should be set to point to the base directory for the MO2 mod you want to deploy
-the files to (do not include `SKSE/Plugins` at the end). This allows you to simply build after making changes and
+and PDB files to an MO2 mod directory if one has been specified by environment variable. The variable, called
+`CommonLibSSESamplePluginTarget`, should be set to point to the base directory for the MO2 mod you want to deploy the
+files to (do not include `SKSE/Plugins` at the end). This allows you to simply build after making changes and
 immediately be able to run Skyrim from MO2 to see the results.
 
 #### Unit Testing
@@ -281,24 +266,20 @@ For AE versions of the executable, SKSE looks for static data in the DLL with th
 `SKSEPlugin_Version`.
 
 ```c++
-#ifdef BUILD_AE
 [[maybe_unused]] EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     SKSE::PluginVersionData v;
-    v.PluginName(PluginName);
-    v.PluginVersion(PluginVersion);
+    v.PluginName("Sample Plugin");
+    v.PluginVersion({1, 0, 0, 0});
     v.UsesAddressLibrary(true);
     return v;
 }();
-#endif
 ```
 
-The data type in CommonLibSSE that represents this structure, `SKSE::PluginVersionData`, only exists in modern
-AE-targeting versions of the project, and is not present in legacy SE or VR editions. For this reason we use a macro to
-ensure this structure is excluded from the source for non-AE builds. This particular version specifies that it uses the
-address library. A plugin must specify the versions of the Skyrim runtime with which it is compatible. Two options are
-avaialable to indicate "all" versions: `UsesAddressLibrary` and `UsesSigScanning` (indicating dynamically scanning the
-code to find matches that appear to be the address you want). If neither of these is specified, then you can also list
-compatible specific versions of Skyrim with `ComaptibleVersions`, e.g.:
+This particular version specifies that it uses the address library. A plugin must specify the versions of the Skyrim
+runtime with which it is compatible. Two options are available to indicate "all" versions: `UsesAddressLibrary` and
+`UsesSigScanning` (indicating dynamically scanning the code to find matches that appear to be the address you want). If
+neither of these is specified, then you can also list compatible specific versions of Skyrim with `ComaptibleVersions`,
+e.g.:
 
 ```c++
 v.CompatibleVersions({ SKSE::RUNTIME_1_6_353, SKSE::RUNTIME_1_6_342 });
@@ -320,7 +301,9 @@ If found, this function is called. For the DLL to be considered a valid SKSE plu
 * Set `pluginInfo->name` to a non-null, non-empty string.
 
 Historically some initialization was often done by plugins in this function, such as initializing logging. In the modern
-plugin design this should be avoided, since it has no equivalent in the AE design.
+plugin design this should be avoided, since it has no equivalent in the AE design. The version here is suitable for
+cross-runtime support, and bases its query implementation on the `SKSEPlugin_Version` implementation, thus keeping them
+in sync.
 
 Once valid SKSE plugins have been identified, SKSE will call their `SKSEPlugin_Load` functions one at a time. This
 function must also be present or the SKSE plugin will not be loaded, and the function must have the following signature:
@@ -396,6 +379,14 @@ in `SKSEPlugin_Load`, but it is done here as a demonstration of how messaging wo
 #### Papyrus Development
 
 #### Serialization (the SKSE Cosave)
+Our sample project is tracking how many times each actor is hit, but the state of our plugin will be reverted after
+every game load. We need it to track the hit counts in the save game, and restore that count when the game is loaded.
+SKSE provides a *cosave* for this purpose. SKSE plugins add their own custom data to the cosave, which is stored in a
+separate file alongside the original Skyrim save file. Each plugin can register one callback to handle the cosave for
+saving, loading, and reverting the game to its default state (used when a new game starts or a a save is about to be
+loaded).
+
+Each plugin must use a unique ID for its content in the save file.
 
 #### Function Hooks
 Function hooking is the act of intercepting a function, or a function call site, and replacing the functionality with
@@ -448,27 +439,26 @@ and other objects in the executable. These IDs are used to dynamically lookup th
 Address Library's databases. We see this being done in this project:
 
 ```c++
-#ifdef BUILD_AE
-    REL::ID id(44001);
-#else
-    REL::ID id(42832);
-#endif
+  int32_t* PopulateHitData(Actor* target, char* unk0);
 
-int32_t* PopulateHitData(Actor* target, char* unk0);
+  REL::Relocation<decltype(PopulateHitData)>& GetHookedFunction() noexcept {
+      static REL::Relocation<decltype(PopulateHitData)> value(RELOCATION_ID(42832, 44001).address() + 0x42);
+      return value;
+  }
 
-REL::Relocation<decltype(PopulateHitData)> fn(id.address() + 0x42);
-
-REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
+  REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
 ```
 
-Here we have the proper Address Library ID for each Skyrim runtime type (AE, SE, or VR). Notably there is no specific
-VR ID; the VR Address Library uses SE ID's, but maps them to VR offsets. This only works for a subset of IDs that have
-been crowdsourced, however the correct mapping exists for this ID so VR support is automatic.
+We use the `REL::Relocation` type to get a strongly-typed reference to a memory address. The memory is looked up from
+Address Library using a unique ID that is persistent across Skyrim releases so that we don't need to update the DLL for
+each release. There are two separate lineages of Address Library IDs, one for SE/VR, and one for AE. The macro
+`RELOCATION_ID` takes the SE/VR ID in the first argument and the AE argument in the second. When using CommonLibSSE-NG,
+this choice is resolved at runtime based on the Skyrim executable currently in use, allowing a single DLL to work across
+all versions of Skyrim.
 
-We then use the `REL::Relocation` type to get a strongly-typed reference to a memory address. Here we add `0x42` to the
-address associated with that ID, because the ID is the ID of the memory address where the function starts. In this case=
-we are actually hooking a call to another function which occurs `0x42` bytes past the start of the function. The
-signature of that function is `int32_t*(Actor*, char*)`, and we define the function that will intercept that call as
+In this case= we are actually hooking a call to another function which occurs `0x42` bytes past the start of the
+function. For that reason we need to add an additional `0x42` to the address the Address Library IDs will resolve to.
+The signature of that function is `int32_t*(Actor*, char*)`, and we define the function that will intercept that call as
 well as using that type for the `REL::Relocation` that maps to that call site. We also keep a second `REL::Relocation`
 which we assign when we make the `write_call<5>` call, which points to the resulting trampoline function. We can use
 this to call the trampoline, which in effect makes the original function call. This way we can intercept the call while

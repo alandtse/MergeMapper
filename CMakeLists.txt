@@ -54,23 +54,6 @@ message("Options:")
 option(BUILD_TESTS "Build unit tests." OFF)
 message("\tTests: ${BUILD_TESTS}")
 
-option(BUILD_SE "Build for Skyrim SE versions prior to 1.6.x." OFF)
-message("\tLegacy Special Edition: ${BUILD_SE}")
-
-option(BUILD_VR "Build for Skyrim VR." OFF)
-message("\tSkyrim VR: ${BUILD_VR}")
-
-if (BUILD_SE)
-    set(BUILD_ABBREV SE)
-    add_compile_definitions(BUILD_SE)
-elseif (BUILD_VR)
-    set(BUILD_ABBREV VR)
-    add_compile_definitions(BUILD_VR)
-else ()
-    set(BUILD_ABBREV AE)
-    add_compile_definitions(BUILD_AE)
-endif ()
-
 ########################################################################################################################
 ## Find dependencies
 ########################################################################################################################
@@ -181,8 +164,12 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        CommonLibSSE::CommonLibSSE
         ryml::ryml
+)
+
+target_link_libraries(${PROJECT_NAME}
+        PUBLIC
+        CommonLibSSE::CommonLibSSE
         spdlog::spdlog
 )
 
@@ -204,9 +191,9 @@ else ()
     set(BUILD_NAME "Release")
 endif ()
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/${BUILD_ABBREV}${BUILD_NAME}/")
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/Plugin${BUILD_NAME}/")
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/${BUILD_ABBREV}${BUILD_NAME}/")
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/Plugin${BUILD_NAME}/")
 file(GLOB_RECURSE OUTPUT_DLLS "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/**/*.dll")
 file(GLOB_RECURSE OUTPUT_PDBS "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/**/*.pdb")
 file(GLOB_RECURSE OUTPUT_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/contrib/Distribution/**/*.pex")
@@ -218,23 +205,11 @@ set_property(TARGET ${PROJECT_NAME}
         APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_SCRIPTS}")
 
 # Automatic deployment to Mod Organizer 2 mod directory.
-if (BUILD_SE AND DEFINED ENV{CommonLibSSESamplePluginTargetSE})
+if (DEFINED ENV{CommonLibSSESamplePluginTarget})
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetSE}/SKSE/Plugins/")
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTarget}/SKSE/Plugins/")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetSE}/SKSE/Plugins/")
-endif ()
-if (BUILD_VR AND DEFINED ENV{CommonLibSSESamplePluginTargetVR})
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetVR}/SKSE/Plugins/")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetVR}/SKSE/Plugins/")
-endif ()
-if (NOT BUILD_SE AND NOT BUILD_VR AND DEFINED ENV{CommonLibSSESamplePluginTargetAE})
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetAE}/SKSE/Plugins/")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTargetAE}/SKSE/Plugins/")
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "$ENV{CommonLibSSESamplePluginTarget}/SKSE/Plugins/")
 endif ()
 
 ########################################################################################################################
@@ -269,6 +244,6 @@ if (BUILD_TESTS)
             src/PCH.h
     )
 
-    # TODO: When Address Library database loading is fixed.
-    #gtest_discover_tests(${PROJECT_NAME}Tests PROPERTIES ENVIRONMENT "SKSE_RUNTIME=$<TARGET_FILE:${PROJECT_NAME}>")
+    # TODO: Enable unit testing.
+    #gtest_discover_tests(${PROJECT_NAME}Tests)
 endif ()

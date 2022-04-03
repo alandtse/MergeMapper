@@ -10,17 +10,6 @@ using namespace SKSE;
 namespace {
     constexpr std::string_view PapyrusClass = "HitCounter";
 
-    // The ID here is the ID of the function in Address Library. We use it to not be tied to the specific Skyrim
-    // executable version. However, there are still three incompatible databases of addresses, for Skyrim 1.5.x
-    // (pre-AE), Skyrim 1.6.x (post-AE), and Skyrim VR. This sample supports all three by allowing you to build a
-    // separate DLL for each and changing the ID used with a macro. The SE ID is used for Skyrim VR as well, since the
-    // VR address library uses SE ID's but maps them to a VR offset.
-#ifdef BUILD_AE
-    REL::ID id(44001);
-#else
-    REL::ID id(42832);
-#endif
-
     int32_t* PopulateHitData(Actor* target, char* unk0);
 
     // The <code>Relocation</code> class references something in the Skyrim engine (e.g. static data, a function, etc.)
@@ -28,13 +17,24 @@ namespace {
     // so we cannot hard-code the memory address. Relocation will rebase your memory offset to the base memory address
     // of the Skyrim process, so that it adjusts on every run. However, it is recommended not to provide a memory
     // offset, but rather a <code>REL::ID</code> to lookup the offset dynamically with Address Library.
-    REL::Relocation<decltype(PopulateHitData)> fn(id.address() + 0x42);
+    //
+    // The ID here is the ID of the function in Address Library. We use it to not be tied to the specific Skyrim
+    // executable version. However, there are still three incompatible databases of addresses, for Skyrim 1.5.x
+    // (pre-AE), Skyrim 1.6.x (post-AE), and Skyrim VR. This sample supports all three by allowing you to build a
+    // separate DLL for each and changing the ID used with a macro. The SE ID is used for Skyrim VR as well, since the
+    // VR address library uses SE ID's but maps them to a VR offset. RELOCATION_ID is a macro in CommonLibSSE-NG which
+    // can dynamically choose between an SE and AE ID at runtime, depending on which version of Skyrim is in use. This
+    // allows for a single DLL that works across both versions of Skyrim.
+    REL::Relocation<decltype(PopulateHitData)>& GetHookedFunction() noexcept {
+        static REL::Relocation<decltype(PopulateHitData)> value(RELOCATION_ID(42832, 44001).address() + 0x42);
+        return value;
+    }
 
     REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
 
     // Start handlers for Papyrus functions.
     //
-    // Note that SKSE cannot allow creation of new instanced Papyrus types. Therefore all Papyrus extensions will be
+    // Note that SKSE cannot allow creation of new instanced Papyrus types. Therefore, all Papyrus extensions will be
     // static functions (labeled "global" in Papyrus). For the purpose of binding a function, this is indicated by the
     // first parameter being a <code>RE::StaticFunctionTag*</code>.
     //
@@ -101,6 +101,7 @@ void Sample::InitializeHook(Trampoline& trampoline) {
     // The trampoline pointed to contains any instructions from the original function we overwrote and a call to the
     // instruction that comes after, so that if we call that address as a function, we are in effect calling the
     // original code.
-    OriginalPopulateHitData = trampoline.write_call<5>(fn.address(), reinterpret_cast<uintptr_t>(PopulateHitData));
+    OriginalPopulateHitData = trampoline.write_call<5>(GetHookedFunction().address(),
+                                                       reinterpret_cast<uintptr_t>(PopulateHitData));
     log::debug("Hit data hook written.");
 }
