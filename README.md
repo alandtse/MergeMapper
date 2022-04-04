@@ -153,7 +153,7 @@ Skyrim, not only at build-time, but at runtime as well.
         {
             "kind": "git",
             "repository": "https://gitlab.com/colorglass/vcpkg-colorglass",
-            "baseline": "926654b35b42c50f8f6928c60d76acc4b0a20213",
+            "baseline": "59ebdd824b295fad4effcdccfe6e6aaa47ff4764",
             "packages": [
               // ...
             ]
@@ -195,9 +195,16 @@ immediately be able to run Skyrim from MO2 to see the results.
 
 #### Unit Testing
 The project comes with built-in support for running unit tests with GTest. The build produces an executable with all
-GTest unit tests; running this executable will run the tests. See `test/HitCounterManagerTest.cpp` for an example. GTest
-is the most widely used unit testing framework with wide support integrated into IDEs, including support by Visual
-Studio, Visual Studio Code, and CLion.
+GTest unit tests; running this executable will run the tests. See `test/HitCounterManager.cpp` for an example. GTest is
+the most widely used unit testing framework with wide support integrated into IDEs, including support by Visual Studio,
+Visual Studio Code, and CLion.
+
+You can run the tests from within your IDE to see results in its UI, or simply execute the test executable it builds,
+called `CommonLibSSESamplePluginTests.exe`. CommonLibSSE NG enhances CommonLibSSE to enable the tests to run without
+being within a Skyrim environment. However, some care must be taken. As unit tests, and not integration tests, it is
+important to not exercise code that interacts with the Skyrim runtime. Avoid function hooks or calling Skyrim
+functions. Unit tests are best used to test the Skyrim-independent backend to your code, as is done in this sample where
+the `HitCounterManager` is tested.
 
 #### DLL Metadata
 This project comes with a `version.rc.in` file which generates metadata for your output. This embeds things like your

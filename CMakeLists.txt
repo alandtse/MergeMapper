@@ -244,6 +244,6 @@ if (BUILD_TESTS)
             src/PCH.h
     )
 
-    # TODO: Enable unit testing.
-    #gtest_discover_tests(${PROJECT_NAME}Tests)
+    # Disabled pending fixes to CMake/Google Test to handle environment variables properly.
+    gtest_discover_tests(${PROJECT_NAME}Tests DISCOVERY_MODE PRE_TEST)
 endif ()
