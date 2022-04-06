@@ -1,14 +1,16 @@
-#include <Sample/HitCounterManager.h>
-
 #include <SKSE/SKSE.h>
+#include <Sample/HitCounterManager.h>
 
 using namespace RE;
 using namespace Sample;
 using namespace SKSE;
 
 namespace {
-    constexpr int TrackedActorsRecord = 'TACT';
-    constexpr int HitCountsRecord = 'HITC';
+    // These four-character record types, which store data in the SKSE cosave, are little-endian. That means they are
+    // reversed from the character order written here. Using the byteswap functions reverses them back to the order
+    // the characters are written in the source code.
+    inline const auto TrackedActorsRecord = _byteswap_ulong('TACT');
+    inline const auto HitCountsRecord = _byteswap_ulong('HITC');
 }
 
 HitCounterManager& HitCounterManager::GetSingleton() noexcept {
@@ -72,56 +74,53 @@ void HitCounterManager::OnGameLoaded(SerializationInterface* serde) {
     // If you make breaking changes to your data format, you can increase the version number used when writing the data
     // out and check that number here to handle previous versions.
     while (serde->GetNextRecordInfo(type, version, size)) {
-        switch (type) {
-            case HitCountsRecord:
-                // First read how many items follow in this record, so we know how many times to iterate.
-                std::size_t hitCountsSize;
-                serde->ReadRecordData(&hitCountsSize, sizeof(hitCountsSize));
-                // Iterate over the remaining data in the record.
-                for (; hitCountsSize > 0; --hitCountsSize) {
-                    RE::FormID actorFormID;
-                    serde->ReadRecordData(&actorFormID, sizeof(actorFormID));
-                    // When reading back a form ID from a save, that form ID may no longer be valid because the user's
-                    // load order may have changed. During the load call, it is possible to use
-                    // <code>ResolveFormID</code> to attempt to find the new form ID, based on the user's current load
-                    // order and the load order that was recorded in the save file.
-                    RE::FormID newActorFormID;
-                    if (!serde->ResolveFormID(actorFormID, newActorFormID)) {
-                        log::warn("Actor ID {:X} could not be found after loading the save.", actorFormID);
-                        continue;
-                    }
-                    int32_t hitCount;
-                    serde->ReadRecordData(&hitCount, sizeof(hitCount));
-                    auto* actor = TESForm::LookupByID<Actor>(newActorFormID);
-                    if (actor) {
-                        GetSingleton()._hitCounts.try_emplace(actor, hitCount);
-                    } else {
-                        log::warn("Actor ID {:X} could not be found after loading the save.", newActorFormID);
-                    }
+        if (type == HitCountsRecord) {
+            // First read how many items follow in this record, so we know how many times to iterate.
+            std::size_t hitCountsSize;
+            serde->ReadRecordData(&hitCountsSize, sizeof(hitCountsSize));
+            // Iterate over the remaining data in the record.
+            for (; hitCountsSize > 0; --hitCountsSize) {
+                RE::FormID actorFormID;
+                serde->ReadRecordData(&actorFormID, sizeof(actorFormID));
+                // When reading back a form ID from a save, that form ID may no longer be valid because the user's
+                // load order may have changed. During the load call, it is possible to use
+                // <code>ResolveFormID</code> to attempt to find the new form ID, based on the user's current load
+                // order and the load order that was recorded in the save file.
+                RE::FormID newActorFormID;
+                if (!serde->ResolveFormID(actorFormID, newActorFormID)) {
+                    log::warn("Actor ID {:X} could not be found after loading the save.", actorFormID);
+                    continue;
                 }
-                break;
-            case TrackedActorsRecord:
-                std::size_t trackedActorsSize;
-                serde->ReadRecordData(&trackedActorsSize, sizeof(trackedActorsSize));
-                for (; trackedActorsSize > 0; --trackedActorsSize) {
-                    RE::FormID actorFormID;
-                    serde->ReadRecordData(&actorFormID, sizeof(actorFormID));
-                    RE::FormID newActorFormID;
-                    if (!serde->ResolveFormID(actorFormID, newActorFormID)) {
-                        log::warn("Actor ID {:X} could not be found after loading the save.", actorFormID);
-                        continue;
-                    }
-                    auto* actor = TESForm::LookupByID<Actor>(newActorFormID);
-                    if (actor) {
-                        GetSingleton()._trackedActors.emplace(actor);
-                    } else {
-                        log::warn("Actor ID {:X} could not be found after loading the save.", newActorFormID);
-                    }
+                int32_t hitCount;
+                serde->ReadRecordData(&hitCount, sizeof(hitCount));
+                auto* actor = TESForm::LookupByID<Actor>(newActorFormID);
+                if (actor) {
+                    GetSingleton()._hitCounts.try_emplace(actor, hitCount);
+                } else {
+                    log::warn("Actor ID {:X} could not be found after loading the save.", newActorFormID);
                 }
-                break;
-            default:
-                log::warn("Unknown record type in cosave.");
-                __assume(false);
+            }
+        } else if (type == TrackedActorsRecord) {
+            std::size_t trackedActorsSize;
+            serde->ReadRecordData(&trackedActorsSize, sizeof(trackedActorsSize));
+            for (; trackedActorsSize > 0; --trackedActorsSize) {
+                RE::FormID actorFormID;
+                serde->ReadRecordData(&actorFormID, sizeof(actorFormID));
+                RE::FormID newActorFormID;
+                if (!serde->ResolveFormID(actorFormID, newActorFormID)) {
+                    log::warn("Actor ID {:X} could not be found after loading the save.", actorFormID);
+                    continue;
+                }
+                auto* actor = TESForm::LookupByID<Actor>(newActorFormID);
+                if (actor) {
+                    GetSingleton()._trackedActors.emplace(actor);
+                } else {
+                    log::warn("Actor ID {:X} could not be found after loading the save.", newActorFormID);
+                }
+            }
+        } else {
+            log::warn("Unknown record type in cosave.");
+            __assume(false);
         }
     }
 }

@@ -94,7 +94,7 @@ namespace {
      * save file. SKSE plugins can write their own data to this file, and load it again when the save game is loaded,
      * allowing them to keep custom data along with a player's save. Each plugin must have a unique ID, which is four
      * characters long (similar to the record names used by forms in ESP files). Note however this is little-endian, so
-     * technically the 'SMPL' here ends up as 'LPMS' in the save file.
+     * technically the 'SMPL' here ends up as 'LPMS' in the save file, unless we use a byte order swap.
      * </p>
      *
      * <p>
@@ -105,7 +105,7 @@ namespace {
     void InitializeSerialization() {
         log::trace("Initializing cosave serialization...");
         auto* serde = GetSerializationInterface();
-        serde->SetUniqueID('SMPL');
+        serde->SetUniqueID(_byteswap_ulong('SMPL'));
         serde->SetSaveCallback(Sample::HitCounterManager::OnGameSaved);
         serde->SetRevertCallback(Sample::HitCounterManager::OnRevert);
         serde->SetLoadCallback(Sample::HitCounterManager::OnGameLoaded);

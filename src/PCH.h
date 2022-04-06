@@ -96,7 +96,6 @@
 #include <version>
 
 #define SPDLOG_COMPILED_LIB
-//#include <SKSE/Impl/PCH.h>
 #include <RE/Skyrim.h>
 #include <SKSE/SKSE.h>
 #include <REL/Relocation.h>

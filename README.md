@@ -132,6 +132,15 @@ your first SKSE plugin! You can find the DLL in the project directory under `bui
 ![Visual Studio CMake Import In Progress](docs/visual-studio-build-success.png)
 
 #### Visual Studio Code
+The sample project comes with configuration out-of-the-box for doing Papyrus development in Visual Studio Code. Doing so
+requires that the Skyrim vanilla script sources, and the SKSE sources, are available. Therefore, you should load your
+project for C++ development in Visual Studio first, and wait until the CMake configuration has completed, before doing
+Papyrus development. The Vcpkg repository from the Skyrim NG project includes Vcpkg ports that automatically extract the
+necessary Papyrus script sources as a part of the CMake configuration process.
+
+One the CMake configuration is done, in Visual Studio Code go to `File -> Open Workspace From File...` and find the
+project file `CommonLibSSESamplePlugin.code-workspace` and open it. This gives you a Visual Studio Code workspace with
+everything prepared for Papyrus development.
 
 ## Understanding the Project
 ### Build Features
@@ -382,8 +391,77 @@ In this sample project we initialize the function hooks in `kDataLoaded`; this i
 in `SKSEPlugin_Load`, but it is done here as a demonstration of how messaging works.
 
 #### Papyrus Bindings
+You can add new Papyrus functions that are implemented in native code using SKSE. The sample project starts this process
+in the load time of the plugin, when it gets the Papyrus interfaces with `SKSE::GetPapyrusInterface()`. This call
+returns an interface that can be used to call a registration callback. When Skyrim is still loading, the Papyrus virtual
+machine is not yet ready to register native functions. The registration callback will be called to register your native
+functions after the VM is initialized. It is possible to register functions any time after the VM is initialized, using
+the `RE::BSScript::IVirtualMachine` interface (or the `RE::BSScript::Internal::VirtualMachine` singleton object), but
+the most common way to register functions using the registration callbacks:
+
+```c++
+if (SKSE::GetPapyrusInterface()->Register(Sample::RegisterHitCounter)) {
+    log::debug("Papyrus functions bound.");
+} else {
+    stl::report_and_fail("Failure to register Papyrus bindings.");
+}
+```
+
+Your registration callback should be a function which accepts either a `RE::BSScript::IVirtualMachine*` or a
+`RE::BSScript::Internal::VirtualMachine*` argument and returns a boolean, with `true` indicating success. During this
+callback you can register a native function with the VM's `RegisterFunction` call:
+
+```c++
+bool Sample::RegisterHitCounter(IVirtualMachine* vm) {
+    vm->RegisterFunction("StartCounting", PapyrusClass, StartCounting);
+    vm->RegisterFunction("StopCounting", PapyrusClass, StopCounting);
+    vm->RegisterFunction("GetTotalHitCounters", PapyrusClass, GetTotalHitCounters);
+    vm->RegisterFunction("Increment", PapyrusClass, Increment);
+    vm->RegisterFunction("GetCount", PapyrusClass, GetCount);
+
+    return true;
+}
+```
+
+Registering a function accepts the name of the function, the name of the script class, and finally a pointer to the
+function that will be executed to handle the function. Normally, SKSE cannot handle instance functions, only global
+functions (unless you are using Fully Dynamic Game Engine). The first argument of your callback function takes the
+Papyrus `self` argument, but for global functions it accepts an argument of type `RE::StaticFunctionTag*` instead, and
+this will therefore be your `self` argument for all functions. It is also possible to precede this argument with two
+others, one of type `RE::BSScript::IVirtualMachine*` (or `RE::BSScript::Internal::VirtualMachine*`), and a second of
+type `RE::VMStackID`. This is an advanced case that can be used to reflect on the call stack that was used to invoke
+your function, and it is not demonstrated in this project.
+
+The subsequent arguments to your function will map to the Papyrus function that are passed in. These arguments can be
+mapped to primitive Papyrus types like `Bool` (a C++ `bool`), `Int` (a C++ `int32_t`), `Float` (a C++ `float_t`), or
+a `String` (which can map to a C++ `std::string`, `std::string_view`, or `RE::BSFixedString`), or they can be a `Form`,
+`ActiveMagicEffect`, or `Alias`. If the argument is a form, your argument can be any CommonLibSSE form pointer type that
+is compatible with the Papyrus type, e.g. a `RE::TESForm*`, `RE::TESObjectWEAP*`, `RE::Actor*`, etc. `ActiveMagicEffect`
+maps to `RE::ActiveEffect*`, and `Alias` maps to `RE::BGSBaseAlias*` or its child classes.
+
+Papyrus arrays can be mapped to a C++ type of a generic container with an element type that can be bound to the type of
+the array elements in Papyrus. The container can be any type which is "array-like", such as `std::vector`, `std::list`,
+or any custom container that implements similar functions and constructors.
+
+Similar rules apply to your return types, which convert from C++ back to the Papyrus types.
+
+```c++
+// Example Papyrus binding.
+int32_t GetCount(StaticFunctionTag*, Actor* actor) {
+    if (!actor) {
+        return 0;
+    }
+    return HitCounterManager::GetSingleton().GetHitCount(actor).value_or(0);
+}
+```
 
 #### Papyrus Development
+To work with your Papyrus scripts, use the Papyrus project view in Visual Studio Code. You an press `Ctrl+Shift+B` to
+activate the build task. The sample project has three build tasks, one to build the Papyrus scripts in debug mode, one
+to build the in release mode (with optimizations), and one to build tests (in debug mode only; this builds the script
+that lets you demo the functionality in-game). You can select the proper build type to perform that build, which will
+populate the proper script folders in the FOMOD directory (`contrib/Distribution`) with the resulting scripts so that
+they can be included in the final FOMOD archive.
 
 #### Serialization (the SKSE Cosave)
 Our sample project is tracking how many times each actor is hit, but the state of our plugin will be reverted after
