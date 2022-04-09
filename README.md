@@ -154,7 +154,8 @@ dependencies in your own `vcpkg.json` file.
 To solve this problem the Skyrim NG project has produced a public repository, available for all in the Skyrim and
 Fallout 4 communities, to use for their development. This repository includes a modern head of CommonLibSSE
 development (called `commonlibsse-ng`). This version of CommonLibSSE uniquely is capable of working with any version of
-Skyrim, not only at build-time, but at runtime as well.
+Skyrim, not only at build-time, but at runtime as well. This library is also available in a precompiled form as
+`commonlibsse-ng-prebuilt`, which is being used here to save time.
 
 ```json
 {
@@ -184,7 +185,7 @@ repository hosted by Color-Glass Studios, and is a big step forward in streamlin
 #### Multi-Runtime Builds
 A major problem with developing for modern Skyrim is the fragmentation of Skyrim runtimes between pre-AE executables,
 post-AE executables, and Skyrim VR. This project demonstrates how to achieve support for all three in a single codebase.
-The version of CommonLibSSE used in this project is a fork from the Skyrim NG project called CommonLibSSE-NG, which
+The version of CommonLibSSE used in this project is a fork from the Skyrim NG project called CommonLibSSE NG, which
 allows a single version of the compiled library to work with Skyrim AE, SE, or VR. Therefore, your resulting DLL will be
 able to work with any version of Skyrim. Users will not need to choose a correct version of the DLL to download and
 install.
@@ -527,7 +528,7 @@ Address Library's databases. We see this being done in this project:
   int32_t* PopulateHitData(Actor* target, char* unk0);
 
   REL::Relocation<decltype(PopulateHitData)>& GetHookedFunction() noexcept {
-      static REL::Relocation<decltype(PopulateHitData)> value(RELOCATION_ID(42832, 44001).address() + 0x42);
+      static REL::Relocation<decltype(PopulateHitData)> value(REL::RelocationID(42832, 44001).address() + 0x42);
       return value;
   }
 
@@ -536,8 +537,8 @@ Address Library's databases. We see this being done in this project:
 
 We use the `REL::Relocation` type to get a strongly-typed reference to a memory address. The memory is looked up from
 Address Library using a unique ID that is persistent across Skyrim releases so that we don't need to update the DLL for
-each release. There are two separate lineages of Address Library IDs, one for SE/VR, and one for AE. The macro
-`RELOCATION_ID` takes the SE/VR ID in the first argument and the AE argument in the second. When using CommonLibSSE-NG,
+each release. There are two separate lineages of Address Library IDs, one for SE/VR, and one for AE. The function
+`RelocationID` takes the SE/VR ID in the first argument and the AE argument in the second. When using CommonLibSSE NG,
 this choice is resolved at runtime based on the Skyrim executable currently in use, allowing a single DLL to work across
 all versions of Skyrim.
 
