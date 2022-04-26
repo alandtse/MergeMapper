@@ -108,3 +108,8 @@
 #include <spdlog/sinks/msvc_sink.h>
 
 #define SAMPLE_EXPORT __declspec(dllexport)
+
+#ifndef RELOCATION_ID
+// If building with the upstream CommonLibSSE, always build for AE.
+#   define RELOCATION_ID(a_se, a_ae) REL::ID(a_ae)
+#endif

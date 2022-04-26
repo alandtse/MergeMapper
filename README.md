@@ -155,7 +155,8 @@ To solve this problem the Skyrim NG project has produced a public repository, av
 Fallout 4 communities, to use for their development. This repository includes a modern head of CommonLibSSE
 development (called `commonlibsse-ng`). This version of CommonLibSSE uniquely is capable of working with any version of
 Skyrim, not only at build-time, but at runtime as well. This library is also available in a precompiled form as
-`commonlibsse-ng-prebuilt`, which is being used here to save time.
+`commonlibsse-ng-prebuilt`, which is being used here to save time. The resulting DLL can be used with Skyrim SE, AE, and
+Skyrim VR.
 
 ```json
 {
@@ -170,8 +171,12 @@ Skyrim, not only at build-time, but at runtime as well. This library is also ava
         }
     ]
 }
-
 ```
+
+The use of CommonLibSSE NG by default lets this sample project work with Skyrim SE, AE, and VR in a single build.
+However, it is possible to compile this project against other forks, including the original upstream (by using the
+`commonlibsse` port, AE-only) and powerof3's fork (using either `commonlibsse-po3-se` to build for SE or
+`commonlibsse-po3-ae` to build for AE). You can use the `commonlibvr` port as well, to build for VR.
 
 Furthermore, this Vcpkg repository includes the ability to build and link to SKSE itself, as well as the ability to
 deploy the original Bethesda script sources and SKSE versions of those sources. Using the `bethesda-skyrim-scripts`

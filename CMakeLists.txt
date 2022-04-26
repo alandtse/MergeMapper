@@ -20,7 +20,7 @@ configure_file(
 
 set(headers
         include/Sample/Sample.h
-)
+        )
 
 set(sources
         src/Config.cpp
@@ -30,7 +30,7 @@ set(sources
 
 set(tests
         test/HitCounterManager.cpp
-)
+        )
 
 source_group(
         TREE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -91,7 +91,7 @@ if (MSVC)
             /W4 # Warning level (all warnings)
 
             # warnings -> errors
-            /we4715	# 'function' : not all control paths return a value
+            /we4715 # 'function' : not all control paths return a value
 
             # disable warnings
             /wd4005 # macro redefinition, needed for workarounds for CLion
@@ -136,47 +136,47 @@ add_library(${PROJECT_NAME} SHARED
         ${headers}
         ${sources}
         ${CMAKE_CURRENT_BINARY_DIR}/version.rc
-)
+        )
 
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
 
 target_compile_features(${PROJECT_NAME}
         PUBLIC
         cxx_std_23
-)
+        )
 
 target_compile_definitions(${PROJECT_NAME}
         PUBLIC
         BOOST_STL_INTERFACES_DISABLE_CONCEPTS
-)
+        )
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:src>
         ${ARTICUNO_INCLUDE_DIRS}
-)
+        )
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+        )
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
         ryml::ryml
-)
+        )
 
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
         CommonLibSSE::CommonLibSSE
         spdlog::spdlog
-)
+        )
 
 target_precompile_headers(${PROJECT_NAME}
         PRIVATE
         src/PCH.h
-)
+        )
 
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/Sample"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
@@ -205,13 +205,13 @@ set_property(TARGET ${PROJECT_NAME}
         APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_SCRIPTS}")
 
 # Automatic deployment to Mod Organizer 2 mod directory.
-foreach(DEPLOY_TARGET $ENV{CommonLibSSESamplePluginTargets})
+foreach (DEPLOY_TARGET $ENV{CommonLibSSESamplePluginTargets})
     message("Adding deployment target ${DEPLOY_TARGET}.")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${DEPLOY_TARGET}/SKSE/Plugins/")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> "${DEPLOY_TARGET}/SKSE/Plugins/")
-endforeach()
+endforeach ()
 
 ########################################################################################################################
 ## Configure unit tests
@@ -228,7 +228,7 @@ if (BUILD_TESTS)
     target_compile_features(${PROJECT_NAME}Tests
             PUBLIC
             cxx_std_23
-    )
+            )
 
     target_link_libraries(
             ${PROJECT_NAME}Tests
@@ -243,7 +243,7 @@ if (BUILD_TESTS)
     target_precompile_headers(${PROJECT_NAME}Tests
             PRIVATE
             src/PCH.h
-    )
+            )
 
     # Disabled pending fixes to CMake/Google Test to handle environment variables properly.
     gtest_discover_tests(${PROJECT_NAME}Tests DISCOVERY_MODE PRE_TEST)

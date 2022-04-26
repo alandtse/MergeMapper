@@ -23,15 +23,15 @@ namespace {
     // executable version. However, there are still three incompatible databases of addresses, for Skyrim 1.5.x
     // (pre-AE), Skyrim 1.6.x (post-AE), and Skyrim VR. This sample supports all three by allowing you to build a
     // separate DLL for each and changing the ID used with a macro. The SE ID is used for Skyrim VR as well, since the
-    // VR address library uses SE ID's but maps them to a VR offset. RelocationID is a function in CommonLibSSE-NG which
+    // VR address library uses SE ID's but maps them to a VR offset. RELOCATION_ID is a macro in CommonLibSSE NG which
     // can dynamically choose between an SE and AE ID at runtime, depending on which version of Skyrim is in use. This
     // allows for a single DLL that works across both versions of Skyrim.
-    REL::Relocation<decltype(PopulateHitData)>& GetHookedFunction() noexcept {
-        static REL::Relocation<decltype(PopulateHitData)> value(RelocationID(42832, 44001).address() + 0x42);
+    Relocation<decltype(PopulateHitData)>& GetHookedFunction() noexcept {
+        static Relocation<decltype(PopulateHitData)> value(RELOCATION_ID(42832, 44001).address() + 0x42);
         return value;
     }
 
-    REL::Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
+    Relocation<decltype(PopulateHitData)> OriginalPopulateHitData;
 
     // Start handlers for Papyrus functions.
     //
