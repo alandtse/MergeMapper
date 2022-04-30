@@ -18,6 +18,18 @@ configure_file(
         @ONLY
 )
 
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}.manifest.in
+        ${CMAKE_CURRENT_BINARY_DIR}/src/${PROJECT_NAME}.manifest
+        @ONLY
+)
+
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PluginInfo.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/src/PluginInfo.h
+        @ONLY
+)
+
 set(headers
         include/Sample/Sample.h
         )
@@ -26,7 +38,9 @@ set(sources
         src/Config.cpp
         src/HitCounterManager.cpp
         src/Main.cpp
-        src/Papyrus.cpp)
+        src/Papyrus.cpp
+        src/${PROJECT_NAME}.manifest
+        )
 
 set(tests
         test/HitCounterManager.cpp
@@ -153,6 +167,7 @@ target_compile_definitions(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
         PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>
         $<INSTALL_INTERFACE:src>
         ${ARTICUNO_INCLUDE_DIRS}
         )

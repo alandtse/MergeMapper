@@ -2,8 +2,10 @@
 
 #include "Config.h"
 #include "Papyrus.h"
+#include "PluginInfo.h"
 
 using namespace RE::BSScript;
+using namespace Sample;
 using namespace SKSE;
 using namespace SKSE::log;
 using namespace SKSE::stl;
@@ -20,8 +22,8 @@ using namespace SKSE::stl;
  */
 EXTERN_C [[maybe_unused]] SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
     SKSE::PluginVersionData v;
-    v.PluginName("Sample Plugin");
-    v.PluginVersion({1, 0, 0, 0});
+    v.PluginName(PluginName);
+    v.PluginVersion(PluginVersion);
     v.UsesAddressLibrary(true);
     return v;
 }();
@@ -44,9 +46,9 @@ EXTERN_C [[maybe_unused]] SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []()
  * </p>
  */
 EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface*, PluginInfo* pluginInfo) {
-    pluginInfo->name = SKSEPlugin_Version.pluginName;
+    pluginInfo->name = PluginName.data();
     pluginInfo->infoVersion = PluginInfo::kVersion;
-    pluginInfo->version = SKSEPlugin_Version.pluginVersion;
+    pluginInfo->version = PluginVersion.pack();
     return true;
 }
 
