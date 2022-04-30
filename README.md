@@ -17,6 +17,7 @@ complete and modern project from which to learn.
   * [Build Features](#build-features)
     * [Vcpkg Integration](#vcpkg-integration)
     * [Multi-Runtime Builds](#multi-runtime-builds)
+    * [Clang Support](#clang-support)
     * [Automatic Deployment](#automatic-deployment)
     * [Unit Testing](#unit-testing)
     * [DLL Metadata](#dll-metadata)
