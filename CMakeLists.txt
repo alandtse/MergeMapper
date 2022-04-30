@@ -93,15 +93,17 @@ if (MSVC)
             _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
     )
 
-    if ($ENV{CLION_IDE})
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         add_compile_definitions(
-                __cpp_lib_char8_t         # Workaround for CLion bug.
-                __cpp_consteval           # Workaround for CLion bug.
+                __cpp_lib_char8_t
+                __cpp_consteval
+                __cpp_lib_format
         )
+    else ()
+        add_compile_options(/Zc:preprocessor)
     endif ()
 
     add_compile_options(
-            /Zc:preprocessor # Enable preprocessor conformance mode
             /W4 # Warning level (all warnings)
 
             # warnings -> errors

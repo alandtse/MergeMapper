@@ -195,6 +195,13 @@ allows a single version of the compiled library to work with Skyrim AE, SE, or V
 able to work with any version of Skyrim. Users will not need to choose a correct version of the DLL to download and
 install.
 
+#### Clang Support
+If used with CommonLibSSE NG as the CommonLibSSE fork (the default choice), then it is possible to build the project
+with the Clang compiler. Two CMake presets for Clang, a debug and release build, are included. Clang-CL must be
+available in `PATH` to build with Clang. This can be done easily by installing Clang from the Visual Studio Installer.
+However, this version is currently out of date, and so it is recommended to instead install LLVM from the LLVM GitHub
+releases page, and add its `bin` directory to `PATH` yourself.
+
 #### Automatic Deployment
 When building the sample project, build results are automatically deployed to `contrib/Distribution`. This directory
 has the FOMOD installer for the project. DLL and PDB files are copied automatically. In addition, the CMake clean action
@@ -224,11 +231,16 @@ the `HitCounterManager` is tested.
 
 #### DLL Metadata
 This project comes with a `version.rc.in` file which generates metadata for your output. This embeds things like your
-project's name, version number, and licensing into the DLL file so it shows up in the Windows properties dialog for
-the DLL.
+project's name, version number, and licensing into the DLL file, so it shows up in the Windows properties dialog for
+the DLL. The metadata comes from the CMake project definition. The same information is also used to inject the correct
+name and version number into a header file (`PluginInfo.h`) to be used in declaring the plugin to SKSE.
+
+The project also embeds a manifest for use with Windows' side-by-side assembly feature. Although this is not used by
+SKSE, if you make an SKSE plugin that functions as a library to other plugins, this can be useful (this is not used by
+this sample project).
 
 #### Miscellaneous Elements
-The CMake configuration for the project addresses common issues with C++ development.
+The CMake configuration for the project addresses common issues with C++ development with Visual Studio.
 
 ```cmake
 add_compile_definitions(
@@ -240,10 +252,11 @@ add_compile_definitions(
         _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
 )
 
-if ($ENV{CLION_IDE})
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_definitions(
-            __cpp_lib_char8_t         # Workaround for CLion bug.
-            __cpp_consteval           # Workaround for CLion bug.
+            __cpp_lib_char8_t
+            __cpp_consteval
+            __cpp_lib_format
     )
 endif ()
 ```
