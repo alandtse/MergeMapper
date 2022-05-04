@@ -27,7 +27,7 @@ namespace {
     // can dynamically choose between an SE and AE ID at runtime, depending on which version of Skyrim is in use. This
     // allows for a single DLL that works across both versions of Skyrim.
     Relocation<decltype(PopulateHitData)>& GetHookedFunction() noexcept {
-        static Relocation<decltype(PopulateHitData)> value(RELOCATION_ID(42832, 44001).address() + 0x42);
+        static Relocation<decltype(PopulateHitData)> value(RELOCATION_ID(42832, 44001), 0x42);
         return value;
     }
 

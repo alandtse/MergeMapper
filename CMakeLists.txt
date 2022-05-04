@@ -66,6 +66,7 @@ message("\tTests: ${BUILD_TESTS}")
 ########################################################################################################################
 ## Find dependencies
 ########################################################################################################################
+find_package(binary_io CONFIG REQUIRED)
 find_package(CommonLibSSE REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 
@@ -145,8 +146,7 @@ target_link_libraries(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
-        CommonLibSSE::CommonLibSSE
-        spdlog::spdlog)
+        CommonLibSSE::CommonLibSSE)
 
 target_precompile_headers(${PROJECT_NAME}
         PRIVATE

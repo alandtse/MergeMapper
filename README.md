@@ -75,13 +75,13 @@ git clone https://github.com/microsoft/vcpkg
 
 This project allows for using default Vcpkg configuration when none is externally specified (e.g. from the command line
 or when built as a dependency via Vcpkg). This makes development in your dev environment simpler. To auto-detect Vcpkg
-you must set an environment variable `VCPKG_INSTALLATION_ROOT` to the path to your Vcpkg install. To do so open Control
+you must set an environment variable `VCPKG_ROOT` to the path to your Vcpkg install. To do so open Control
 Panel and go to System. On the left-hand side click About. You will now see an option on the right-hand side of the
 window for "Advanced system settings". You will get a window with a number of options; click "Environment Variables".
 
 ![Environment Variables Button](docs/vcpkg-system-properties.png)
 
-In the environment variables screen click New and enter `VCPKG_INSTALLATION_ROOT` as the variable name. For the value,
+In the environment variables screen click New and enter `VCPKG_ROOT` as the variable name. For the value,
 enter the full path to your Vcpkg install. Note that this variable is not picked up by currently-running applications,
 until they are restarted.
 
