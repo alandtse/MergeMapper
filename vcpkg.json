@@ -27,7 +27,7 @@
             "description": "Build the SKSE plugin.",
             "dependencies": [
                 "articuno",
-                "commonlibsse-ng-prebuilt"
+                "commonlibsse-ng"
             ]
         },
         "tests": {
