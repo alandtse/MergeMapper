@@ -152,5 +152,52 @@
             "configurePreset": "Debug-Clang",
             "description": "Debug build for testing."
         }
+    ],
+    "testPresets": [
+        {
+            "name": "All-Tests",
+            "displayName": "All Tests",
+            "configurePreset": "Debug-MSVC",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": false
+            }
+        },
+        {
+            "name": "Unit-Tests",
+            "displayName": "Unit Tests",
+            "description": "Runs tests that do not require any Skyrim module loaded into the process.",
+            "inherits": "All-Tests",
+            "filter": {
+                "exclude": {
+                    "label": "[integration],[e2e]"
+                }
+            }
+        },
+        {
+            "name": "Integration-Tests",
+            "displayName": "Integration Tests",
+            "description": "Runs tests that interact with a Skyrim module at rest (do not require the Skyrim module to have run any main function).",
+            "inherits": "All-Tests",
+            "filter": {
+                "include": {
+                    "label": "[integration]"
+                }
+            }
+        },
+        {
+            "name": "E2E-Tests",
+            "displayName": "End-to-End Tests",
+            "description": "Runs test that depend on a fully running Skyrim engine in the process.",
+            "inherits": "All-Tests",
+            "filter": {
+                "include": {
+                    "label": "[e2e]"
+                }
+            }
+        }
     ]
 }

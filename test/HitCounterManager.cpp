@@ -1,8 +1,10 @@
-#include <gtest/gtest.h>
 #include <Sample/HitCounterManager.h>
+
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
 
 using namespace Sample;
 
-TEST(HitCounterManager, GetCountForNullActor) {
-    ASSERT_FALSE(HitCounterManager::GetSingleton().GetHitCount(nullptr).has_value());
+TEST_CASE("HitCounterManager/GetCountForNullActor") {
+    CHECK(!HitCounterManager::GetSingleton().GetHitCount(nullptr).has_value());
 }

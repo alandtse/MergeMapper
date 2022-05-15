@@ -225,12 +225,12 @@ namespace {
  */
 EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Load(const LoadInterface* skse) {
     InitializeLogging();
-    log::info("{} is loading...", SKSEPlugin_Version.pluginName);
+    log::info("{} {} is loading...", PluginName, PluginVersion);
     Init(skse);
     InitializeMessaging();
     InitializeSerialization();
     InitializePapyrus();
 
-    log::info("{} has finished loading.", SKSEPlugin_Version.pluginName);
+    log::info("{} has finished loading.", PluginName);
     return true;
 }

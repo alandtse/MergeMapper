@@ -114,3 +114,12 @@
 // If building with the upstream CommonLibSSE, always build for AE.
 #   define RELOCATION_ID(a_se, a_ae) REL::ID(a_ae)
 #endif
+
+// Compatible declarations with other sample projects.
+using namespace std::literals;
+
+namespace logger = SKSE::log;
+
+namespace util {
+    using SKSE::stl::report_and_fail;
+}

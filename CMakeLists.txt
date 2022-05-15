@@ -49,19 +49,18 @@ source_group(
         ${sources}
         ${tests})
 
-########################################################################################################################
-## Add CMake features
-########################################################################################################################
-include(CheckIPOSupported)
-include(GNUInstallDirs)
-include(GoogleTest)
-
 #########################################################################################################################
 ### Build options
 #########################################################################################################################
 message("Options:")
 option(BUILD_TESTS "Build unit tests." OFF)
 message("\tTests: ${BUILD_TESTS}")
+
+########################################################################################################################
+## Add CMake features
+########################################################################################################################
+include(CheckIPOSupported)
+include(GNUInstallDirs)
 
 ########################################################################################################################
 ## Find dependencies
@@ -73,7 +72,7 @@ find_package(ryml CONFIG REQUIRED)
 find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
 
 if (BUILD_TESTS)
-    find_package(GTest CONFIG REQUIRED)
+    find_package(Catch2 CONFIG REQUIRED)
 endif ()
 
 ########################################################################################################################
@@ -194,7 +193,8 @@ endforeach ()
 ## Configure unit tests
 ########################################################################################################################
 if (BUILD_TESTS)
-    enable_testing()
+    include(CTest)
+    include(Catch)
 
     add_executable(
             ${PROJECT_NAME}Tests
@@ -209,15 +209,13 @@ if (BUILD_TESTS)
             ${PROJECT_NAME}Tests
             PRIVATE
             ${PROJECT_NAME}
-            GTest::gmock
-            GTest::gtest
-            GTest::gmock_main
-            GTest::gtest_main)
+            Catch2::Catch2
+            Catch2::Catch2WithMain)
 
     target_precompile_headers(${PROJECT_NAME}Tests
             PRIVATE
             src/PCH.h)
 
-    # Disabled pending fixes to CMake/Google Test to handle environment variables properly.
-    gtest_discover_tests(${PROJECT_NAME}Tests DISCOVERY_MODE PRE_TEST)
+    catch_discover_tests(${PROJECT_NAME}Tests)
+    add_test(NAME ${PROJECT_NAME}Tests COMMAND ${PROJECT_NAME}Tests)
 endif ()

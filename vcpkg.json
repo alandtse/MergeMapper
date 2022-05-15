@@ -40,7 +40,7 @@
                         "plugin"
                     ]
                 },
-                "gtest"
+                "catch2"
             ]
         }
     },

@@ -218,10 +218,12 @@ immediately be able to run Skyrim from MO2 to see the results. This variable is 
 so if you are multi-targeting you can deploy to multiple locations, such as separate AE, SE, and VR mod lists.
 
 #### Unit Testing
-The project comes with built-in support for running unit tests with GTest. The build produces an executable with all
-GTest unit tests; running this executable will run the tests. See `test/HitCounterManager.cpp` for an example. GTest is
-the most widely used unit testing framework with wide support integrated into IDEs, including support by Visual Studio,
-Visual Studio Code, and CLion.
+The project comes with built-in support for running unit tests with Catch2. The build produces an executable with all
+Catch2 unit tests; running this executable will run the tests. See `test/HitCounterManager.cpp` for an example. Catch2
+has native support in the CLion IDE, and support can be added to Visual Studio and Visual Studio Code with extensions in
+their respective marketplaces. In addition, the `CMakePresets.json` includes CTest presets. CTest is a part of CMake and
+is a test runner that integrates with other testing frameworks. Tests can also be run via CTest, which is supported
+natively in Visual Studio, Visual Studio Code, and CLion.
 
 You can run the tests from within your IDE to see results in its UI, or simply execute the test executable it builds,
 called `CommonLibSSESamplePluginTests.exe`. CommonLibSSE NG enhances CommonLibSSE to enable the tests to run without
@@ -229,6 +231,14 @@ being within a Skyrim environment. However, some care must be taken. As unit tes
 important to not exercise code that interacts with the Skyrim runtime. Avoid function hooks or calling Skyrim
 functions. Unit tests are best used to test the Skyrim-independent backend to your code, as is done in this sample where
 the `HitCounterManager` is tested.
+
+It is also possible to perform certain degrees of integration testing. In the CommonLibSSE NG project, the convention is
+to tag integration tests which require interaction with the Skyrim engine, but do not require the engine to initialize
+(i.e. does not require it to even run its `main()` function), with the tag `[integation]`. Those which require the
+engine to be initialized are tagged `[e2e]` (meaning end-to-end). Integration tests require interacting with a Skyrim
+engine that is loaded into the test executable dynamically, rather than in an SKSE plugin loaded into a Skyrim process.
+This is a feature supported currently only in the CommonLibSSE NG fork and is an advanced topic not covered in this
+sample.
 
 #### DLL Metadata
 This project comes with a `version.rc.in` file which generates metadata for your output. This embeds things like your
