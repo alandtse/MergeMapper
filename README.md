@@ -175,9 +175,6 @@ Skyrim VR.
 ```
 
 The use of CommonLibSSE NG by default lets this sample project work with Skyrim SE, AE, and VR in a single build.
-However, it is possible to compile this project against other forks, including the original upstream (by using the
-`commonlibsse` port, AE-only) and powerof3's fork (using either `commonlibsse-po3-se` to build for SE or
-`commonlibsse-po3-ae` to build for AE). You can use the `commonlibvr` port as well, to build for VR.
 
 Furthermore, this Vcpkg repository includes the ability to build and link to SKSE itself, as well as the ability to
 deploy the original Bethesda script sources and SKSE versions of those sources. Using the `bethesda-skyrim-scripts`
@@ -310,53 +307,39 @@ proper SKSE plugin. The way in which this is done differs between SE/VR and AE v
 designed to support all of these cases.
 
 For AE versions of the executable, SKSE looks for static data in the DLL with the plugin metadata, in a structure named
-`SKSEPlugin_Version`.
+`SKSEPlugin_Version`. In CommonLibSSE NG this can be defined declaratively, for a simpler syntax, with the
+`SKSE::PluginDeclaration` class, but a simpler way is to use the `SKSEPluginInfo` macro:
 
 ```c++
-[[maybe_unused]] EXTERN_C SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
-    SKSE::PluginVersionData v;
-    v.PluginName("Sample Plugin");
-    v.PluginVersion({1, 0, 0, 0});
-    v.UsesAddressLibrary(true);
-    return v;
-}();
+SKSEPluginInfo(
+    .Version = PluginVersion,
+    .Name = PluginName
+)
 ```
 
-This particular version specifies that it uses the address library. A plugin must specify the versions of the Skyrim
-runtime with which it is compatible. Two options are available to indicate "all" versions: `UsesAddressLibrary` and
-`UsesSigScanning` (indicating dynamically scanning the code to find matches that appear to be the address you want). If
-neither of these is specified, then you can also list compatible specific versions of Skyrim with `ComaptibleVersions`,
-e.g.:
+This macro also generates an `SKSEPlugin_Query` function, which is the SE-era SKSE's way of identifying an SKSE plugin.
+The generated function will configure the metadata SKSE sees to be identical to what is in `SKSEPlugin_Version`. This
+particular sample specifies that it uses the address library by leaving the `RuntimeCompatibility` property its default
+value. It is possible to specify only specific Skyrim versions are acceptable if this is changed, e.g.:
 
 ```c++
-v.CompatibleVersions({ SKSE::RUNTIME_1_6_353, SKSE::RUNTIME_1_6_342 });
+SKSEPluginInfo(
+    .Version = PluginVersion,
+    .Name = PluginName,
+    .RuntimeCompatibility = { SKSE::RUNTIME_1_6_353, SKSE::RUNTIME_1_6_342 }
+)
 ```
 
 It is *strongly* encouraged that you use address library whenever possible.
 
-Older versions of SKSE for SE and VR use a different method to identify if a DLL is an SKSE plugin. They will look for a
-function called `SKSEPlugin_Query`, with the following signature:
-
-```c++
-EXTERN_C __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface&, SKSE::PluginInfo* pluginInfo);
-```
-
-If found, this function is called. For the DLL to be considered a valid SKSE plugin the function must:
-* Return `true`.
-* Set `pluginInfo->infoVersion` to `SKSE::PluginInfo::kVersion`.
-* Set `pluginInfo->version` to a non-zero integer.
-* Set `pluginInfo->name` to a non-null, non-empty string.
-
-Historically some initialization was often done by plugins in this function, such as initializing logging. In the modern
-plugin design this should be avoided, since it has no equivalent in the AE design. The version here is suitable for
-cross-runtime support, and bases its query implementation on the `SKSEPlugin_Version` implementation, thus keeping them
-in sync.
-
 Once valid SKSE plugins have been identified, SKSE will call their `SKSEPlugin_Load` functions one at a time. This
-function must also be present or the SKSE plugin will not be loaded, and the function must have the following signature:
+function must also be present or the SKSE plugin will not be loaded, and the function must have a particular signature.
+This is simplified in CommonLibSSE NG by using the `SKSEPluginLoad` macro:
 
 ```c++
-EXTERN_C __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse);
+SKSEPluginLoad(const SKSE::LoadInterface* skse) {
+    ...
+}
 ```
 
 Like `SKSEPlugin_Query`, this function must return `true` or the plugin will not be loaded. It is in this function that
