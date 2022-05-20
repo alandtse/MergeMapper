@@ -10,48 +10,6 @@ using namespace SKSE;
 using namespace SKSE::log;
 using namespace SKSE::stl;
 
-/**
- * Declaration of the plugin metadata.
- *
- * <p>
- * Modern versions of SKSE look for this static data in the DLL. It is required to have a plugin version and runtime
- * compatibility information. You should usually specify your runtime compatibility with <code>UsesAddressLibrary</code>
- * to be version independent. If you don't use Address Library you can specify specific Skyrim versions that are
- * supported.
- * </p>
- */
-EXTERN_C [[maybe_unused]] SAMPLE_EXPORT constinit auto SKSEPlugin_Version = []() noexcept {
-    SKSE::PluginVersionData v;
-    v.PluginName(PluginName);
-    v.PluginVersion(PluginVersion);
-    v.UsesAddressLibrary(true);
-    return v;
-}();
-
-/**
- * Callback used by SKSE for Skyrim runtime versions 1.5.x to detect if a DLL is an SKSE plugin.
- *
- * <p>
- * This function should set the plugin information in the plugin info and return true. For post-AE executables it is
- * never called. This implementation sets up the same information as is defined in <code>SKSEPlugin_Version</code>,
- * allowing you to still control all settings via the newer AE-compatible method while remaining backwards-compatible
- * with pre-AE SSE.
- * </p>
- *
- * <p>
- * For modern SKSE development I encourage leaving this function implemented exactly as is; in the past it was not
- * uncommon to implement functionality in this function such as initializing logging, but such logic is not compatible
- * with the post-AE initialization system. To be cross-compatible, all such logic should be in
- * <code>SKSEPlugin_Load</code>.
- * </p>
- */
-EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Query(const QueryInterface*, PluginInfo* pluginInfo) {
-    pluginInfo->name = PluginName.data();
-    pluginInfo->infoVersion = PluginInfo::kVersion;
-    pluginInfo->version = PluginVersion.pack();
-    return true;
-}
-
 namespace {
     /**
      * Setup logging.
@@ -69,7 +27,7 @@ namespace {
         if (!path) {
             report_and_fail("Unable to lookup SKSE logs directory.");
         }
-        *path /= SKSEPlugin_Version.pluginName;
+        *path /= PluginName;
         *path += L".log";
 
         std::shared_ptr<spdlog::logger> log;
@@ -214,6 +172,20 @@ namespace {
 }
 
 /**
+ * This declaration of plugin metadata is what tells SKSE this is an SKSE plugin and should be loaded.
+ *
+ * <p>
+ * This declaration also allows SKSE to troubleshoot compatibility issues. By default your plugin should use Address
+ * Library for compatibility with any Skyrim version. If it does not, you can specify the compatible Skyrim versions
+ * with the <code>RuntimeCompatibility</code> property.
+ * </p>
+ */
+SKSEPluginInfo(
+    .Version = PluginVersion,
+    .Name = PluginName
+)
+
+/**
  * This if the main callback for initializing your SKSE plugin, called just before Skyrim runs its main function.
  *
  * <p>
@@ -223,7 +195,7 @@ namespace {
  * tasks.
  * </p>
  */
-EXTERN_C [[maybe_unused]] SAMPLE_EXPORT bool SKSEAPI SKSEPlugin_Load(const LoadInterface* skse) {
+SKSEPluginLoad(const LoadInterface* skse) {
     InitializeLogging();
     log::info("{} {} is loading...", PluginName, PluginVersion);
     Init(skse);

@@ -95,7 +95,6 @@
 #include <vector>
 #include <version>
 
-#define SPDLOG_COMPILED_LIB
 #include <RE/Skyrim.h>
 #include <SKSE/SKSE.h>
 #include <REL/Relocation.h>
@@ -108,15 +107,11 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
 
-#define SAMPLE_EXPORT __declspec(dllexport)
-
-#ifndef RELOCATION_ID
-// If building with the upstream CommonLibSSE, always build for AE.
-#   define RELOCATION_ID(a_se, a_ae) REL::ID(a_ae)
-#endif
-
 // Compatible declarations with other sample projects.
+#define DLLEXPORT __declspec(dllexport)
+
 using namespace std::literals;
+using namespace REL::literals;
 
 namespace logger = SKSE::log;
 
