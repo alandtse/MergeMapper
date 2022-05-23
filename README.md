@@ -243,10 +243,6 @@ project's name, version number, and licensing into the DLL file, so it shows up 
 the DLL. The metadata comes from the CMake project definition. The same information is also used to inject the correct
 name and version number into a header file (`PluginInfo.h`) to be used in declaring the plugin to SKSE.
 
-The project also embeds a manifest for use with Windows' side-by-side assembly feature. Although this is not used by
-SKSE, if you make an SKSE plugin that functions as a library to other plugins, this can be useful (this is not used by
-this sample project).
-
 #### Miscellaneous Elements
 The CMake configuration for the project addresses common issues with C++ development with Visual Studio.
 

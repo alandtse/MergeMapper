@@ -18,11 +18,6 @@ configure_file(
         @ONLY)
 
 configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}.manifest.in
-        ${CMAKE_CURRENT_BINARY_DIR}/src/${PROJECT_NAME}.manifest
-        @ONLY)
-
-configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PluginInfo.h.in
         ${CMAKE_CURRENT_BINARY_DIR}/src/PluginInfo.h
         @ONLY)
@@ -36,8 +31,7 @@ set(sources
         src/Main.cpp
         src/Papyrus.cpp
 
-        ${CMAKE_CURRENT_BINARY_DIR}/version.rc
-        src/${PROJECT_NAME}.manifest)
+        ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 
 set(tests
         test/HitCounterManager.cpp)
