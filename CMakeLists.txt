@@ -8,18 +8,12 @@ project(
         VERSION 1.0.0
         DESCRIPTION "A sample SKSE plugin built with CommonLibSSE."
         LANGUAGES CXX)
-set(PROJECT_FRIENDLY_NAME "CommonLibSSE Sample Plugin")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/version.rc
-        @ONLY)
-
-configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PluginInfo.h.in
-        ${CMAKE_CURRENT_BINARY_DIR}/src/PluginInfo.h
         @ONLY)
 
 set(headers
@@ -59,8 +53,7 @@ include(GNUInstallDirs)
 ########################################################################################################################
 ## Find dependencies
 ########################################################################################################################
-find_package(binary_io CONFIG REQUIRED)
-find_package(CommonLibSSE REQUIRED)
+find_package(CommonLibSSE CONFIG REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 
 find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
@@ -72,55 +65,35 @@ endif ()
 ########################################################################################################################
 ## Configuration for all targets
 ########################################################################################################################
-if (MSVC)
+if (WIN32)
     add_compile_definitions(
             UNICODE
             _UNICODE
             NOMINMAX
             _AMD64_
-            WIN32_LEAN_AND_MEAN
-            _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
-    )
+            WIN32_LEAN_AND_MEAN)
+endif ()
 
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        add_compile_definitions(
-                __cpp_lib_char8_t
-                __cpp_consteval
-                __cpp_lib_format)
-    else ()
-        add_compile_options(/Zc:preprocessor)
-    endif ()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_definitions(
+            __cpp_lib_char8_t
+            __cpp_consteval
+            __cpp_lib_format)
 endif ()
 
 check_ipo_supported(RESULT USE_IPO OUTPUT IPO_OUTPUT)
 if (USE_IPO)
-    message("Enabling interprocedural optimizations.")
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 else ()
-    message("Interprocedural optimizations are not supported.")
+    message(WARNING "Interprocedural optimizations are not supported.")
 endif ()
 
 ########################################################################################################################
 ## Configure target DLL
 ########################################################################################################################
-add_library(${PROJECT_NAME} SHARED
-        ${headers}
-        ${sources})
+add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources})
 
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
-
-target_compile_features(${PROJECT_NAME}
-        PUBLIC
-        cxx_std_23)
-
-target_compile_options(${PROJECT_NAME}
-        PRIVATE
-        /wd4117 # macro with reserved name; silences warning re" _CRT_USE_BUILTIN_OFFSETOF, needed for standard behavior
-        )
-
-target_compile_options(${PROJECT_NAME}
-        PUBLIC
-        "$<$<CONFIG:RELEASE>:/O2;/Ob2;/Gregcall;/Gw>")
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE
@@ -136,10 +109,6 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
         ryml::ryml)
-
-target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        CommonLibSSE::CommonLibSSE)
 
 target_precompile_headers(${PROJECT_NAME}
         PRIVATE
@@ -194,10 +163,6 @@ if (BUILD_TESTS)
             ${PROJECT_NAME}Tests
             ${headers}
             ${tests})
-
-    target_compile_features(${PROJECT_NAME}Tests
-            PUBLIC
-            cxx_std_23)
 
     target_link_libraries(
             ${PROJECT_NAME}Tests
