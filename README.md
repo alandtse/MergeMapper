@@ -247,14 +247,15 @@ name and version number into a header file (`PluginInfo.h`) to be used in declar
 The CMake configuration for the project addresses common issues with C++ development with Visual Studio.
 
 ```cmake
-add_compile_definitions(
-        UNICODE
-        _UNICODE
-        NOMINMAX
-        _AMD64_
-        WIN32_LEAN_AND_MEAN
-        _CRT_USE_BUILTIN_OFFSETOF # Fixes MSVC being non-compliant with offsetof behavior by default.
-)
+if (WIN32)
+  add_compile_definitions(
+          UNICODE
+          _UNICODE
+          NOMINMAX
+          _AMD64_
+          WIN32_LEAN_AND_MEAN
+  )
+endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_definitions(
@@ -271,10 +272,9 @@ output at link-time:
 ```cmake
 check_ipo_supported(RESULT USE_IPO OUTPUT IPO_OUTPUT)
 if (USE_IPO)
-    message("Enabling interprocedural optimizations.")
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 else ()
-    message("Interprocedural optimizations are not supported.")
+    message(WARNING "Interprocedural optimizations are not supported.")
 endif ()
 ```
 
@@ -304,29 +304,26 @@ designed to support all of these cases.
 
 For AE versions of the executable, SKSE looks for static data in the DLL with the plugin metadata, in a structure named
 `SKSEPlugin_Version`. In CommonLibSSE NG this can be defined declaratively, for a simpler syntax, with the
-`SKSE::PluginDeclaration` class, but a simpler way is to use the `SKSEPluginInfo` macro:
+`SKSE::PluginDeclaration` class, but a simpler way is to use the CMake function:
+
+```cmake
+add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources})
+```
+
+This function also generates an `SKSEPlugin_Version` object, as well as `SKSEPlugin_Query` function, which is the SE-era
+SKSE's way of identifying an SKSE plugin. The generated function will configure the metadata SKSE sees to be identical
+to what is in `SKSEPlugin_Version`. This particular sample specifies that it uses the Address Library, by not specifying
+any other compatibility mode (Address Library is the default). It is possible to specify only specific Skyrim versions
+are acceptable if this is changed, e.g.:
 
 ```c++
-SKSEPluginInfo(
-    .Version = PluginVersion,
-    .Name = PluginName
+add_commonlibsse_plugin(${PROJECT_NAME}
+        COMPATIBLE_RUNTIMES 1.6.353 1.6.343
+        SOURCES ${headers} ${sources}
 )
 ```
 
-This macro also generates an `SKSEPlugin_Query` function, which is the SE-era SKSE's way of identifying an SKSE plugin.
-The generated function will configure the metadata SKSE sees to be identical to what is in `SKSEPlugin_Version`. This
-particular sample specifies that it uses the address library by leaving the `RuntimeCompatibility` property its default
-value. It is possible to specify only specific Skyrim versions are acceptable if this is changed, e.g.:
-
-```c++
-SKSEPluginInfo(
-    .Version = PluginVersion,
-    .Name = PluginName,
-    .RuntimeCompatibility = { SKSE::RUNTIME_1_6_353, SKSE::RUNTIME_1_6_342 }
-)
-```
-
-It is *strongly* encouraged that you use address library whenever possible.
+It is *strongly* encouraged that you use Address Library whenever possible.
 
 Once valid SKSE plugins have been identified, SKSE will call their `SKSEPlugin_Load` functions one at a time. This
 function must also be present or the SKSE plugin will not be loaded, and the function must have a particular signature.
