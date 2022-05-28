@@ -2,7 +2,8 @@
 
 #include "Config.h"
 #include "Papyrus.h"
-#include "PluginInfo.h"
+
+#include <stddef.h>
 
 using namespace RE::BSScript;
 using namespace Sample;
@@ -27,7 +28,7 @@ namespace {
         if (!path) {
             report_and_fail("Unable to lookup SKSE logs directory.");
         }
-        *path /= PluginName;
+        *path /= PluginDeclaration::GetSingleton()->GetName();
         *path += L".log";
 
         std::shared_ptr<spdlog::logger> log;
@@ -172,20 +173,6 @@ namespace {
 }
 
 /**
- * This declaration of plugin metadata is what tells SKSE this is an SKSE plugin and should be loaded.
- *
- * <p>
- * This declaration also allows SKSE to troubleshoot compatibility issues. By default your plugin should use Address
- * Library for compatibility with any Skyrim version. If it does not, you can specify the compatible Skyrim versions
- * with the <code>RuntimeCompatibility</code> property.
- * </p>
- */
-SKSEPluginInfo(
-    .Version = PluginVersion,
-    .Name = PluginName
-)
-
-/**
  * This if the main callback for initializing your SKSE plugin, called just before Skyrim runs its main function.
  *
  * <p>
@@ -197,12 +184,17 @@ SKSEPluginInfo(
  */
 SKSEPluginLoad(const LoadInterface* skse) {
     InitializeLogging();
-    log::info("{} {} is loading...", PluginName, PluginVersion);
+
+    auto* plugin = PluginDeclaration::GetSingleton();
+    auto version = plugin->GetVersion();
+    log::info("{} {} is loading...", plugin->GetName(), version);
+
+
     Init(skse);
     InitializeMessaging();
     InitializeSerialization();
     InitializePapyrus();
 
-    log::info("{} has finished loading.", PluginName);
+    log::info("{} has finished loading.", plugin->GetName());
     return true;
 }
