@@ -7,6 +7,13 @@
     },
     "configurePresets": [
         {
+            "name": "base",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "$env{COMMONLIBSSE_COMPILER} $env{COMMONLIBSSE_PLATFORM} $env{COMMONLIBSSE_TEXT}"
+            }
+        },
+        {
             "name": "vcpkg",
             "hidden": true,
             "cacheVariables": {
@@ -17,10 +24,33 @@
             }
         },
         {
+            "name": "win32",
+            "hidden": true,
+            "environment": {
+                "COMMONLIBSSE_PLATFORM": "-DWIN32_LEAN_AND_MEAN -DNOMINMAX"
+            }
+        },
+        {
+            "name": "win32-unicode",
+            "hidden": true,
+            "inherits": "win32",
+            "environment": {
+                "COMMONLIBSSE_TEXT": "-DUNICODE -D_UNICODE"
+            }
+        },
+        {
+            "name": "x64",
+            "hidden": true,
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
             "name": "msvc",
             "hidden": true,
-            "cacheVariables": {
-                "CMAKE_CXX_FLAGS": "/permissive- /Zc:preprocessor /EHsc $penv{CXXFLAGS}"
+            "environment": {
+                "COMMONLIBSSE_COMPILER": "/permissive- /Zc:preprocessor /EHsc $penv{CXXFLAGS}"
             },
             "vendor": {
                 "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -31,12 +61,14 @@
             }
         },
         {
-            "name": "clang",
+            "name": "clang-cl",
             "hidden": true,
             "cacheVariables": {
-                "CMAKE_CXX_FLAGS": "/permissive- /EHsc -Wno-overloaded-virtual -Wno-delete-non-abstract-non-virtual-dtor $penv{CXXFLAGS}",
                 "CMAKE_C_COMPILER": "clang-cl",
                 "CMAKE_CXX_COMPILER": "clang-cl"
+            },
+            "environment": {
+                "COMMONLIBSSE_COMPILER": "/permissive- /EHsc -Wno-overloaded-virtual -Wno-delete-non-abstract-non-virtual-dtor -D__cpp_lib_char8_t -D__cpp_consteval -D__cpp_lib_format $penv{CXXFLAGS}"
             },
             "vendor": {
                 "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -59,9 +91,12 @@
             }
         },
         {
-            "name": "Debug-MSVC",
+            "name": "build-debug-msvc",
             "inherits": [
+                "base",
                 "vcpkg",
+                "win32-unicode",
+                "x64",
                 "build-tests",
                 "msvc"
             ],
@@ -77,9 +112,12 @@
             }
         },
         {
-            "name": "Release-MSVC",
+            "name": "build-release-msvc",
             "inherits": [
+                "base",
                 "vcpkg",
+                "win32-unicode",
+                "x64",
                 "build-tests",
                 "msvc"
             ],
@@ -95,11 +133,14 @@
             }
         },
         {
-            "name": "Debug-Clang",
+            "name": "build-debug-clang-cl",
             "inherits": [
+                "base",
                 "vcpkg",
+                "win32-unicode",
+                "x64",
                 "build-tests",
-                "clang"
+                "clang-cl"
             ],
             "displayName": "Debug",
             "description": "Debug build for testing.",
@@ -113,11 +154,14 @@
             }
         },
         {
-            "name": "Release-Clang",
+            "name": "build-release-clang-cl",
             "inherits": [
+                "base",
                 "vcpkg",
+                "win32-unicode",
+                "x64",
                 "build-tests",
-                "clang"
+                "clang-cl"
             ],
             "displayName": "Release",
             "description": "Optimized release build.",
@@ -133,35 +177,35 @@
     ],
     "buildPresets": [
         {
-            "name": "Release-MSVC",
+            "name": "release-msvc",
             "displayName": "Release (MSVC)",
-            "configurePreset": "Release-MSVC",
+            "configurePreset": "build-release-msvc",
             "description": "Optimized release build."
         },
         {
-            "name": "Debug-MSVC",
+            "name": "debug-msvc",
             "displayName": "Debug (MSVC)",
-            "configurePreset": "Debug-MSVC",
+            "configurePreset": "build-debug-msvc",
             "description": "Debug build for testing."
         },
         {
-            "name": "Release-Clang",
+            "name": "release-clang-cl",
             "displayName": "Release (Clang)",
-            "configurePreset": "Release-Clang",
+            "configurePreset": "build-release-clang-cl",
             "description": "Optimized release build."
         },
         {
-            "name": "Debug-Clang",
+            "name": "debug-clang-cl",
             "displayName": "Debug (Clang)",
-            "configurePreset": "Debug-Clang",
+            "configurePreset": "build-debug-clang-cl",
             "description": "Debug build for testing."
         }
     ],
     "testPresets": [
         {
-            "name": "All-Tests",
+            "name": "tests-all",
             "displayName": "All Tests",
-            "configurePreset": "Debug-MSVC",
+            "configurePreset": "build-debug-msvc",
             "output": {
                 "outputOnFailure": true
             },
@@ -171,10 +215,10 @@
             }
         },
         {
-            "name": "Unit-Tests",
+            "name": "tests-unit",
             "displayName": "Unit Tests",
             "description": "Runs tests that do not require any Skyrim module loaded into the process.",
-            "inherits": "All-Tests",
+            "inherits": "tests-all",
             "filter": {
                 "exclude": {
                     "label": "[integration],[e2e]"
@@ -182,10 +226,10 @@
             }
         },
         {
-            "name": "Integration-Tests",
+            "name": "tests-integration",
             "displayName": "Integration Tests",
             "description": "Runs tests that interact with a Skyrim module at rest (do not require the Skyrim module to have run any main function).",
-            "inherits": "All-Tests",
+            "inherits": "tests-all",
             "filter": {
                 "include": {
                     "label": "[integration]"
@@ -193,10 +237,10 @@
             }
         },
         {
-            "name": "E2E-Tests",
+            "name": "tests-e2e",
             "displayName": "End-to-End Tests",
             "description": "Runs test that depend on a fully running Skyrim engine in the process.",
-            "inherits": "All-Tests",
+            "inherits": "tests-all",
             "filter": {
                 "include": {
                     "label": "[e2e]"
