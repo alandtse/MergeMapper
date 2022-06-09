@@ -92,10 +92,10 @@ Clone this repository to your local machine by running
 the following command at the command line (using Command Prompt, Powershell, or Windows Terminal):
 
 ```commandline
-git clone https://gitlab.com/colorglass/fudge-sample-plugin-cpp.git
+git clone https://gitlab.com/colorglass/commonlibsse-sample-plugin.git
 ```
 
-This will create a directory called `fudge-sample-plugin-cpp` with a clone of this project.
+This will create a directory called `commonlibsse-sample-plugin` with a clone of this project.
 
 ### Importing the Project into Your IDE
 #### Visual Studio
