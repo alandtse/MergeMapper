@@ -58,8 +58,6 @@ find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources})
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
 
-add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
-
 target_include_directories(${PROJECT_NAME}
         PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
