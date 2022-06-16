@@ -209,7 +209,7 @@ directory for Papyrus scripts (the compiled scripts are also cleaned by a CMake 
 
 You can also incrementally build to a mod directory in Mod Organizer 2. The CMake build is configured to deploy the DLL
 and PDB files to an MO2 mod directory if one has been specified by environment variable. The variable, called
-`CommonLibSSESamplePluginTargets`, should be set to point to the base directory for the MO2 mod you want to deploy the
+`SkyrimPluginTargets`, should be set to point to the base directory for the MO2 mod you want to deploy the
 files to (do not include `SKSE/Plugins` at the end). This allows you to simply build after making changes and
 immediately be able to run Skyrim from MO2 to see the results. This variable is treated as a semicolon-separated list,
 so if you are multi-targeting you can deploy to multiple locations, such as separate AE, SE, and VR mod lists.

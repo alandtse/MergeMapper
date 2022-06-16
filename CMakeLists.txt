@@ -140,7 +140,7 @@ set_property(TARGET ${PROJECT_NAME}
         APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${OUTPUT_SCRIPTS}")
 
 # Automatic deployment to Mod Organizer 2 mod directory.
-foreach(DEPLOY_TARGET $ENV{CommonLibSSESamplePluginTargets})
+foreach (DEPLOY_TARGET $ENV{SkyrimPluginTargets})
     message("Adding deployment target ${DEPLOY_TARGET}.")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${DEPLOY_TARGET}/SKSE/Plugins/")
