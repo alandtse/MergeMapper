@@ -5,9 +5,9 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ## Define project
 ########################################################################################################################
 project(
-        CommonLibSSESamplePlugin
+        MergeMapper
         VERSION 1.0.0
-        DESCRIPTION "A sample SKSE plugin built with CommonLibSSE."
+        DESCRIPTION "A SKSE plugin to dynamically map zmerges."
         LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,25 +21,27 @@ configure_file(
         @ONLY)
 
 set(headers
-        include/Sample/Sample.h)
+        include/MergeMapper.h
+        include/MergeMapperPluginAPI.h
+)
 
 set(sources
         src/Config.cpp
-        src/HitCounterManager.cpp
+        src/MergeMapper.cpp
+        src/MergeMapperPluginAPI.cpp
         src/Main.cpp
-        src/Papyrus.cpp
-
         ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 
-set(tests
-        test/HitCounterManager.cpp)
+# set(tests
+#         test/HitCounterManager.cpp)
 
 source_group(
         TREE ${CMAKE_CURRENT_SOURCE_DIR}
         FILES
         ${headers}
         ${sources}
-        ${tests})
+        # ${tests}
+        )
 
 #########################################################################################################################
 ### Build options
@@ -54,7 +56,9 @@ message("\tTests: ${BUILD_TESTS}")
 find_package(CommonLibSSE CONFIG REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
+find_package(nlohmann_json CONFIG REQUIRED)
 
+add_compile_definitions(LIBRARY_EXPORTS)
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources})
 add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
 
@@ -86,7 +90,7 @@ install(TARGETS ${PROJECT_NAME}
 ########################################################################################################################
 ## Configure unit tests
 ########################################################################################################################
-if(BUILD_TESTS)
+if(BUILD_TESTS AND FALSE)
     find_package(Catch2 CONFIG REQUIRED)
 
     include(CTest)

@@ -1,6 +1,5 @@
 #include "Papyrus.h"
 
-#include <Sample/HitCounterManager.h>
 
 using namespace Sample;
 using namespace RE;

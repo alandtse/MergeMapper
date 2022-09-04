@@ -1,9 +1,8 @@
-#include <Sample/HitCounterManager.h>
-
 #include "Config.h"
-#include "Papyrus.h"
 
 #include <stddef.h>
+#include "MergeMapper.h"
+#include "MergeMapperPluginAPI.h"
 
 using namespace RE::BSScript;
 using namespace Sample;
@@ -66,10 +65,6 @@ namespace {
     void InitializeSerialization() {
         log::trace("Initializing cosave serialization...");
         auto* serde = GetSerializationInterface();
-        serde->SetUniqueID(_byteswap_ulong('SMPL'));
-        serde->SetSaveCallback(Sample::HitCounterManager::OnGameSaved);
-        serde->SetRevertCallback(Sample::HitCounterManager::OnRevert);
-        serde->SetLoadCallback(Sample::HitCounterManager::OnGameLoaded);
         log::trace("Cosave serialization initialized.");
     }
 
@@ -89,11 +84,11 @@ namespace {
      */
     void InitializePapyrus() {
         log::trace("Initializing Papyrus binding...");
-        if (GetPapyrusInterface()->Register(Sample::RegisterHitCounter)) {
-            log::debug("Papyrus functions bound.");
-        } else {
-            stl::report_and_fail("Failure to register Papyrus bindings.");
-        }
+        // if (GetPapyrusInterface()->Register(Sample::RegisterHitCounter)) {
+        //     log::debug("Papyrus functions bound.");
+        // } else {
+        //     stl::report_and_fail("Failure to register Papyrus bindings.");
+        // }
     }
 
     /**
@@ -113,12 +108,12 @@ namespace {
      * </p>
      */
     void InitializeHooking() {
-        log::trace("Initializing trampoline...");
-        auto& trampoline = GetTrampoline();
-        trampoline.create(64);
-        log::trace("Trampoline initialized.");
+        // log::trace("Initializing trampoline...");
+        // auto& trampoline = GetTrampoline();
+        // trampoline.create(64);
+        // log::trace("Trampoline initialized.");
 
-        Sample::InitializeHook(trampoline);
+        // Sample::InitializeHook(trampoline);
     }
 
     /**
@@ -142,17 +137,25 @@ namespace {
      * </p>
      */
     void InitializeMessaging() {
-        if (!GetMessagingInterface()->RegisterListener([](MessagingInterface::Message* message) {
-            switch (message->type) {
+        const auto g_messaging = GetMessagingInterface();
+        if (!g_messaging->RegisterListener([](MessagingInterface::Message* message) {
+                switch (message->type) {
                 // Skyrim lifecycle events.
                 case MessagingInterface::kPostLoad: // Called after all plugins have finished running SKSEPlugin_Load.
                     // It is now safe to do multithreaded operations, or operations against other plugins.
+                    if (GetMessagingInterface()->RegisterListener(nullptr,
+                                                                  MergeMapperPluginAPI::ModMessageHandler))
+                        logger::info("Successfully registered SKSE listener {}",
+                                     MergeMapperPluginAPI::MergeMapperPluginName);
+                    else
+                        logger::info("Unable to register SKSE listener");
+                    break;
                 case MessagingInterface::kPostPostLoad: // Called after all kPostLoad message handlers have run.
+                    break;
                 case MessagingInterface::kInputLoaded: // Called when all game data has been found.
                     break;
                 case MessagingInterface::kDataLoaded: // All ESM/ESL/ESP plugins have loaded, main menu is now active.
                     // It is now safe to access form data.
-                    InitializeHooking();
                     break;
 
                 // Skyrim game events.
@@ -191,9 +194,10 @@ SKSEPluginLoad(const LoadInterface* skse) {
 
 
     Init(skse);
+    g_interface001.GetMerges();
     InitializeMessaging();
-    InitializeSerialization();
-    InitializePapyrus();
+    // InitializeSerialization();
+    // InitializePapyrus();
 
     log::info("{} has finished loading.", plugin->GetName());
     return true;
