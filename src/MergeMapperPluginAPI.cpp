@@ -1,12 +1,6 @@
 #include "MergeMapperPluginAPI.h"
 // Interface code based on https://github.com/adamhynek/higgs
 
-// A message used to fetch MergeMapper's interface
-struct MergeMapperMessage {
-    enum : uint32_t { kMessage_GetInterface = 0xe6cb8b59 };  // Randomly generated
-    void* (*GetApiFunction)(unsigned int revisionNumber) = nullptr;
-};
-
 // Stores the API after it has already been fetched
 MergeMapperPluginAPI::IMergeMapperInterface001* g_mergeMapperInterface = nullptr;
 

@@ -1,4 +1,5 @@
 #include "MergeMapper.h"
+#include "MergeMapperPluginAPI.h"
 #include <nlohmann/json.hpp>
 
 
@@ -9,12 +10,6 @@ namespace stl {
 static nlohmann::json mergeMap;
 
 using namespace MergeMapperPluginAPI;
-
-// A message used to fetch MergeMapper's interface
-struct MergeMapperMessage {
-    enum : uint32_t { kMessage_GetInterface = 0xe6cb8b59 };  // Randomly generated
-    void* (*GetApiFunction)(unsigned int revisionNumber) = nullptr;
-};
 
 // Interface classes are stored statically
 MergeMapperInterface001 g_interface001;
