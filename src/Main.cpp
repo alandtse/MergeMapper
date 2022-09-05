@@ -145,8 +145,9 @@ namespace {
                     // It is now safe to do multithreaded operations, or operations against other plugins.
                     if (GetMessagingInterface()->RegisterListener(nullptr,
                                                                   MergeMapperPluginAPI::ModMessageHandler))
-                        logger::info("Successfully registered SKSE listener {}",
-                                     MergeMapperPluginAPI::MergeMapperPluginName);
+                        logger::info("Successfully registered SKSE listener {} with buildnumber {}",
+                                     MergeMapperPluginAPI::MergeMapperPluginName,
+                                     g_interface001.GetBuildNumber());
                     else
                         logger::info("Unable to register SKSE listener");
                     break;
