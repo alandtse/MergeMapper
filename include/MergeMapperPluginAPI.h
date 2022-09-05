@@ -1,4 +1,6 @@
 #pragma once
+#include <RE/Skyrim.h>
+#include <SKSE/SKSE.h>
 // Interface code based on https://github.com/adamhynek/higgs
 
 namespace MergeMapperPluginAPI {
