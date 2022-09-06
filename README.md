@@ -40,7 +40,7 @@ git clone https://github.com/alandtse/MergeMapper.git
 
 ### General
 1. Copy [include/MergeMapperPluginAPI.h](include/MergeMapperPluginAPI.h) and [src/MergeMapperPluginAPI.cpp](src/MergeMapperPluginAPI.cpp) into your project.
-   * Alternatively use [vcpkg to manage](#Manage)
+   * Alternatively use [vcpkg to manage](#manage-dependency-with-vcpkg)
 2. Get API doing SKSE PostPostLoad. By default it is in the global `g_mergeMapperInterface`.
 ```cpp
 #include "MergeMapperPluginAPI.h"
