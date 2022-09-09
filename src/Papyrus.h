@@ -6,4 +6,4 @@ namespace Sample {
     bool RegisterHitCounter(RE::BSScript::IVirtualMachine* vm);
 
     void InitializeHook(SKSE::Trampoline& trampoline);
-}
+}  // namespace Sample

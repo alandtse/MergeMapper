@@ -1,18 +1,14 @@
 #pragma once
 
-#include <articuno/articuno.h>
 #include <SKSE/SKSE.h>
+#include <articuno/articuno.h>
 
 namespace Sample {
     class Debug {
     public:
-        [[nodiscard]] inline spdlog::level::level_enum GetLogLevel() const noexcept {
-            return _logLevel;
-        }
+        [[nodiscard]] inline spdlog::level::level_enum GetLogLevel() const noexcept { return _logLevel; }
 
-        [[nodiscard]] inline spdlog::level::level_enum GetFlushLevel() const noexcept {
-            return _flushLevel;
-        }
+        [[nodiscard]] inline spdlog::level::level_enum GetFlushLevel() const noexcept { return _flushLevel; }
 
     private:
         articuno_serialize(ar) {
@@ -42,19 +38,15 @@ namespace Sample {
 
     class Config {
     public:
-        [[nodiscard]] inline const Debug& GetDebug() const noexcept {
-            return _debug;
-        }
+        [[nodiscard]] inline const Debug& GetDebug() const noexcept { return _debug; }
 
         [[nodiscard]] static const Config& GetSingleton() noexcept;
 
     private:
-        articuno_serde(ar) {
-            ar <=> articuno::kv(_debug, "debug");
-        }
+        articuno_serde(ar) { ar <=> articuno::kv(_debug, "debug"); }
 
         Debug _debug;
 
         friend class articuno::access;
     };
-}
+}  // namespace Sample

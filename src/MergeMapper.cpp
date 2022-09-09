@@ -1,7 +1,8 @@
 #include "MergeMapper.h"
-#include "MergeMapperPluginAPI.h"
+
 #include <nlohmann/json.hpp>
 
+#include "MergeMapperPluginAPI.h"
 
 namespace stl {
     using namespace SKSE::stl;
@@ -34,11 +35,10 @@ void MergeMapperPluginAPI::ModMessageHandler(SKSE::MessagingInterface::Message* 
 }
 
 // Fetches the MergeMapper version number
-unsigned int MergeMapperInterface001::GetBuildNumber() { 
+unsigned int MergeMapperInterface001::GetBuildNumber() {
     auto* plugin = SKSE::PluginDeclaration::GetSingleton();
     return plugin->GetVersion().pack();
-    }
-
+}
 
 bool MergeMapperInterface001::GetMerges() {
     using json = nlohmann::json;
@@ -66,8 +66,8 @@ bool MergeMapperInterface001::GetMerges() {
                 merged = std::wstring(filename.begin(), filename.end());
             } catch (std::exception& e) {
                 logger::warn("	Unable to open {}, defaulting filename to {}:{}",
-                                stl::utf16_to_utf8(file).value_or("<unicode conversion error>"s),
-                                stl::utf16_to_utf8(merged).value_or("<unicode conversion error>"s), e.what());
+                             stl::utf16_to_utf8(file).value_or("<unicode conversion error>"s),
+                             stl::utf16_to_utf8(merged).value_or("<unicode conversion error>"s), e.what());
             }
             file = path + L"\\map.json";
             try {
@@ -75,12 +75,12 @@ bool MergeMapperInterface001::GetMerges() {
                 json_file >> json_data;
                 json_file.close();
             } catch (std::exception& e) {
-                logger::warn("	Unable to open {}:{}",
-                                stl::utf16_to_utf8(file).value_or("<unicode conversion error>"s), e.what());
+                logger::warn("	Unable to open {}:{}", stl::utf16_to_utf8(file).value_or("<unicode conversion error>"s),
+                             e.what());
             }
             auto converted_merged = stl::utf16_to_utf8(merged).value_or(
                 ""s);  // json requires wstring conversion to utf encoding
-                        // https://json.nlohmann.me/home/faq/#parse-errors-reading-non-ascii-characters
+                       // https://json.nlohmann.me/home/faq/#parse-errors-reading-non-ascii-characters
             if (!std::filesystem::exists(folder + converted_merged)) {
                 logger::warn("	{} does not exist, not processing merges for this file", converted_merged);
                 continue;
@@ -89,7 +89,7 @@ bool MergeMapperInterface001::GetMerges() {
                 for (auto& [esp, idmap] : json_data.items()) {
                     auto espkey = esp;
                     std::transform(espkey.begin(), espkey.end(), espkey.begin(),
-                                    [](auto ch) { return static_cast<char>(std::tolower(ch)); });
+                                   [](auto ch) { return static_cast<char>(std::tolower(ch)); });
                     if (idmap.size()) {
                         logger::info(" Found {} maps to {} with {} mappings", esp, converted_merged, idmap.size());
                         total += idmap.size();
@@ -100,10 +100,10 @@ bool MergeMapperInterface001::GetMerges() {
                         for (auto& [key, value] : idmap.items()) {
                             auto storedKey = std::to_string(std::stoi(key, 0, 16));
                             std::transform(storedKey.begin(), storedKey.end(), storedKey.begin(),
-                                            [](auto ch) { return static_cast<char>(std::tolower(ch)); });
+                                           [](auto ch) { return static_cast<char>(std::tolower(ch)); });
                             auto storedValue = std::to_string(std::stoi(value.get<std::string>(), 0, 16));
                             std::transform(storedValue.begin(), storedValue.end(), storedValue.begin(),
-                                            [](auto ch) { return static_cast<char>(std::tolower(ch)); });
+                                           [](auto ch) { return static_cast<char>(std::tolower(ch)); });
                             mergeMap[espkey]["map"][storedKey] = storedValue;
                         }
                     }
@@ -119,35 +119,37 @@ bool MergeMapperInterface001::GetMerges() {
     return true;
 }
 std::pair<const char*, RE::FormID> GetNewFormID(std::wstring& oldName, const RE::FormID oldFormID) {
-	auto converted_oldName = stl::utf16_to_utf8(oldName).value_or(""s);  //json requires wstring conversion to utf https://json.nlohmann.me/home/faq/#parse-errors-reading-non-ascii-characters
-	if (converted_oldName == "")
-		logger::error(" Unable to convert oldName to UTF encoding; no mapping possible");
-	return std::make_pair(converted_oldName.c_str(), oldFormID);
+    auto converted_oldName = stl::utf16_to_utf8(oldName).value_or(
+        ""s);  // json requires wstring conversion to utf
+               // https://json.nlohmann.me/home/faq/#parse-errors-reading-non-ascii-characters
+    if (converted_oldName == "") logger::error(" Unable to convert oldName to UTF encoding; no mapping possible");
+    return std::make_pair(converted_oldName.c_str(), oldFormID);
 }
 
 std::pair<const char*, RE::FormID> MergeMapperInterface001::GetNewFormID(const char* oldName,
                                                                          const RE::FormID oldFormID) {
     const char* modName = oldName;
     std::string espkey = oldName;
-	std::transform(espkey.begin(), espkey.end(), espkey.begin(), [](auto ch) { return static_cast<char>(std::tolower(ch)); });
-	RE::FormID formID = oldFormID;
-	//check for merged esps
-	if (mergeMap.contains(espkey)) {
+    std::transform(espkey.begin(), espkey.end(), espkey.begin(),
+                   [](auto ch) { return static_cast<char>(std::tolower(ch)); });
+    RE::FormID formID = oldFormID;
+    // check for merged esps
+    if (mergeMap.contains(espkey)) {
         modName = mergeMap[espkey]["name"].get_ptr<nlohmann::json::string_t*>()->c_str();
-		auto storedKey = std::to_string(formID);
-		if (!mergeMap[espkey]["map"].empty()) {
-			std::transform(storedKey.begin(), storedKey.end(), storedKey.begin(), [](auto ch) { return static_cast<char>(std::tolower(ch)); });
-			if (mergeMap[espkey]["map"].contains(storedKey)) {
-				formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>());
-			}
-		}
-	}
+        auto storedKey = std::to_string(formID);
+        if (!mergeMap[espkey]["map"].empty()) {
+            std::transform(storedKey.begin(), storedKey.end(), storedKey.begin(),
+                           [](auto ch) { return static_cast<char>(std::tolower(ch)); });
+            if (mergeMap[espkey]["map"].contains(storedKey)) {
+                formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>());
+            }
+        }
+    }
     if (oldName != modName && oldFormID != formID)
-       logger::debug("GetNewFormID:\t{} {:x} -> {} {:x}", oldName, oldFormID, modName, formID);
+        logger::debug("GetNewFormID:\t{} {:x} -> {} {:x}", oldName, oldFormID, modName, formID);
     else if (oldName != modName)
         logger::debug("GetNewFormID:\t{} -> {} {:x}", oldName, modName, formID);
     else if (oldFormID != formID)
         logger::debug("GetNewFormID:\t{} {:x} -> {:x}", oldName, oldFormID, formID);
     return std::make_pair(modName, formID);
 }
-

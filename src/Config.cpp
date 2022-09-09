@@ -22,4 +22,3 @@ const Config& Config::GetSingleton() noexcept {
 
     return instance;
 }
-

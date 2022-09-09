@@ -1,6 +1,5 @@
 #include "Papyrus.h"
 
-
 using namespace Sample;
 using namespace RE;
 using namespace RE::BSScript;
@@ -45,17 +44,11 @@ namespace {
     // are std::string, std::string_view, or Skyrim's RE::BSFixedString (a case-preserving but case-insensitive interned
     // string), and the primitive types are converted to <code>bool</code>, <code>int</code>, and <code>float</code>.
 
-    bool StartCounting(StaticFunctionTag*, Actor* actor) {
-        return HitCounterManager::GetSingleton().Track(actor);
-    }
+    bool StartCounting(StaticFunctionTag*, Actor* actor) { return HitCounterManager::GetSingleton().Track(actor); }
 
-    bool StopCounting(StaticFunctionTag*, Actor* actor) {
-        return HitCounterManager::GetSingleton().Untrack(actor);
-    }
+    bool StopCounting(StaticFunctionTag*, Actor* actor) { return HitCounterManager::GetSingleton().Untrack(actor); }
 
-    int32_t GetTotalHitCounters(StaticFunctionTag*) {
-        return 0;
-    }
+    int32_t GetTotalHitCounters(StaticFunctionTag*) { return 0; }
 
     void Increment(StaticFunctionTag*, Actor* actor, int32_t by) {
         if (actor) {
@@ -74,7 +67,7 @@ namespace {
         HitCounterManager::GetSingleton().RegisterHit(target);
         return OriginalPopulateHitData(target, unk0);
     }
-}
+}  // namespace
 
 /**
  * This is the function that acts as a registration callback for Papyrus functions. Within you can register functions
@@ -101,7 +94,7 @@ void Sample::InitializeHook(Trampoline& trampoline) {
     // The trampoline pointed to contains any instructions from the original function we overwrote and a call to the
     // instruction that comes after, so that if we call that address as a function, we are in effect calling the
     // original code.
-    OriginalPopulateHitData = trampoline.write_call<5>(GetHookedFunction().address(),
-                                                       reinterpret_cast<uintptr_t>(PopulateHitData));
+    OriginalPopulateHitData =
+        trampoline.write_call<5>(GetHookedFunction().address(), reinterpret_cast<uintptr_t>(PopulateHitData));
     log::debug("Hit data hook written.");
 }
