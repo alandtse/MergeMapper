@@ -6,7 +6,7 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 project(
         MergeMapper
-        VERSION 1.0.0
+        VERSION 1.1.0
         DESCRIPTION "A SKSE plugin to dynamically map zmerges."
         LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
@@ -59,6 +59,7 @@ find_package(CommonLibSSE CONFIG REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
 find_package(nlohmann_json CONFIG REQUIRED)
+find_library(Detours_LIBRARIES NAMES detours.lib)
 
 add_compile_definitions(LIBRARY_EXPORTS)
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES ${headers} ${sources})
@@ -77,7 +78,9 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        ryml::ryml)
+        ryml::ryml
+        ${Detours_LIBRARIES}
+)
 
 target_precompile_headers(${PROJECT_NAME}
         PRIVATE

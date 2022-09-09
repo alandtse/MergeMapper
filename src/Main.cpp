@@ -151,8 +151,8 @@ namespace {
                     else
                         logger::info("Unable to register SKSE listener");
                     break;
-                case MessagingInterface::kPostPostLoad: // Called after all kPostLoad message handlers have run.
-                    break;
+                        MergeMapperPluginAPI::Hook::Install();
+                        break;
                 case MessagingInterface::kInputLoaded: // Called when all game data has been found.
                     break;
                 case MessagingInterface::kDataLoaded: // All ESM/ESL/ESP plugins have loaded, main menu is now active.
@@ -196,6 +196,7 @@ SKSEPluginLoad(const LoadInterface* skse) {
 
     Init(skse);
     g_interface001.GetMerges();
+    g_mergeMapperInterface = &g_interface001;
     InitializeMessaging();
     // InitializeSerialization();
     // InitializePapyrus();
