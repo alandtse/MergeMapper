@@ -195,9 +195,11 @@ SKSEPluginLoad(const LoadInterface* skse) {
     log::info("{} {} is loading...", plugin->GetName(), version);
 
     Init(skse);
-    g_interface001.GetMerges();
-    g_mergeMapperInterface = &g_interface001;
-    InitializeMessaging();
+    if (g_interface001.GetMerges()) {
+        g_mergeMapperInterface = &g_interface001;
+        InitializeMessaging();
+    }else
+        log::info("{} disabled because no merges found.", plugin->GetName());
     // InitializeSerialization();
     // InitializePapyrus();
 
