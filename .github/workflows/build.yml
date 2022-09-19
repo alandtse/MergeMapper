@@ -30,43 +30,25 @@ jobs:
           - os: windows-latest
             vcpkgCommitId: '01b29f6d8212bc845da64773b18665d682f5ab66'
     steps:
-
       - uses: actions/checkout@v3
       # Install latest CMake.
       - uses: lukka/get-cmake@latest
-      # Or pin to a specific CMake version:
-      # lukka/get-cmake@v3.21.2
+      - name: List $RUNNER_WORKSPACE before build
+        run: find $RUNNER_WORKSPACE
+        shell: bash
+      - name: Restore artifacts, or run vcpkg, build (and cache artifacts as post step)
+        uses: lukka/run-vcpkg@latest
+        id: runvcpkg
+        with:
+          vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
+          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
+          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
+          runVcpkgInstall: true
+          vcpkgJsonGlob: '**/cmakepresets/vcpkg.json'
+          appendedCacheKey: vcpkginstall
 
-      # Restore from cache the previously built ports. If a "cache miss" occurs,
-      # then vcpkg is bootstrapped. Since a the vcpkg.json is being used later on
-      # to install the packages when `run-cmake` runs, no packages are installed at
-      # this time.
-      - name: Restore artifacts, or setup vcpkg (do not install any package)
-        uses: lukka/run-vcpkg@v10
-        #with:
-          # This is the default location of the directory containing vcpkg sources.
-          # Change it to the right location if needed.
-          # vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-
-          # If not using a submodule for vcpkg sources, this specifies which commit
-          # id must be checkout from a Git repo. It must not set if using a submodule
-          # for vcpkg.
-          # vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
-
-          # This is the glob expression used to locate the vcpkg.json and add its
-          # hash to the cache key. Change it to match a single manifest file you want
-          # to use. 
-          # Note: do not use `${{ github.context }}` to compose the value as it 
-          # contains backslashes that would be misinterpreted. Instead
-          # compose a value relative to the root of the repository using 
-          # `**/path/from/root/of/repo/to/vcpkg.json` to match the desired `vcpkg.json`.
-          # vcpkgJsonGlob: '**/vcpkg.json'
-
-          # This is needed to run `vcpkg install` command (after vcpkg is built) in
-          # the directory where vcpkg.json has been located. Default is false,
-          # It is highly suggested to let `run-cmake` to run vcpkg (i.e. `false`)
-          # (i.e. let CMake run `vcpkg install`) using the vcpkg.cmake toolchain.
-          # runVcpkgInstall: true
+      - name: Prints output of run-vcpkg's action.
+        run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
 
       - name: Run CMake consuming CMakePreset.json and vcpkg.json by mean of vcpkg.
         uses: lukka/run-cmake@v10
@@ -83,7 +65,9 @@ jobs:
 
           # This is the name of the CMakePresets.json's configuration to build the project.
           buildPreset: 'build-release-msvc'
-
+      - name: List $RUNNER_WORKSPACE after build
+        run: find $RUNNER_WORKSPACE
+        shell: bash
     #env:
     #  By default the action disables vcpkg's telemetry by defining VCPKG_DISABLE_METRICS. 
     #  This behavior can be disabled by defining `VCPKG_ENABLE_METRICS` as follows.
