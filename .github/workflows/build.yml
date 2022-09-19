@@ -53,4 +53,4 @@ jobs:
         with:
           cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
           configurePreset: build-release-msvc
-          buildPreset: build-release-msvc
+          buildPreset: release-msvc
