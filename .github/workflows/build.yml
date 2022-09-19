@@ -1,3 +1,15 @@
+# Copyright (c) 2020-2021-2022 Luca Cappa
+# Released under the term specified in file LICENSE.txt
+# SPDX short identifier: MIT
+#
+# The peculiarity of this workflow is that assumes vcpkg is NOT stored as a submodule of this repository.
+# This workflow does the following:
+# - Restores vcpkg artifacts from cache.
+# - Using the provided Git commit id, sets up vcpkg if needed, then run CMake with CMakePreset.json using a configuration
+#   that leverages the vcpkg's toolchain file. This will automatically run vcpkg to install dependencies
+#   described by the vcpkg.json manifest file. It will be a no-op if those are restored from cache.
+# - Finally builds the sources with Ninja.
+
 name: C/C++ CI
 
 on:
@@ -7,9 +19,16 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    name: '${{ matrix.os }}: build and unit tests'
-    runs-on: windows-latest
+  job:
+    name: ${{ matrix.os }}-${{ github.workflow }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+        include:
+          - os: windows-latest
+            vcpkgCommitId: '01b29f6d8212bc845da64773b18665d682f5ab66'
     steps:
 
       - uses: actions/checkout@v3
