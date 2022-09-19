@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       # Install latest CMake.
-      - uses: lukka/get-cmake@latest
+      - uses: lukka/get-cmake@v10
       - name: List $RUNNER_WORKSPACE before build
         run: find $RUNNER_WORKSPACE
         shell: bash
