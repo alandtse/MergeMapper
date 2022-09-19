@@ -9,14 +9,8 @@
 #   that leverages the vcpkg's toolchain file. This will automatically run vcpkg to install dependencies
 #   described by the vcpkg.json manifest file. It will be a no-op if those are restored from cache.
 # - Finally builds the sources with Ninja.
-
-name: C/C++ CI
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+name: hosted-ninja-vcpkg-autocache
+on: [push, workflow_dispatch]
 
 jobs:
   job:
@@ -25,55 +19,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: windows-latest
-            vcpkgCommitId: '01b29f6d8212bc845da64773b18665d682f5ab66'
+            vcpkgCommitId: '5568f110b509a9fd90711978a7cb76bae75bb092'
+
     steps:
       - uses: actions/checkout@v3
-      # Install latest CMake.
-      - uses: lukka/get-cmake@v10
-      - name: List $RUNNER_WORKSPACE before build
+      - uses: lukka/get-cmake@latest
+      - name: Dump the content of $RUNNER_TEMP
+        run: find $RUNNER_TEMP
+        shell: bash
+      - name: Dump the content of $RUNNER_WORKSPACE
         run: find $RUNNER_WORKSPACE
         shell: bash
-      - name: Restore artifacts, or run vcpkg, build (and cache artifacts as post step)
+
+      - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v10
         id: runvcpkg
         with:
+          # This specifies the location of vcpkg, where it is going to be restored from cache, or create from scratch.
           vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
-          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
-          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
-          runVcpkgInstall: true
+          # The Git commit id of vcpkg to be checked out. This is only needed because we are not using a submodule.
+          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId}}'
+          # The vcpkg.json file, which will be part of cache key computation.
           vcpkgJsonGlob: '**/vcpkg.json'
-          appendedCacheKey: vcpkginstall
 
-      - name: Prints output of run-vcpkg's action.
-        run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
+      - name: Prints output of run-vcpkg's action
+        run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}'"
 
-      - name: Run CMake consuming CMakePreset.json and vcpkg.json by mean of vcpkg.
+      - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
         with:
-          # This is the default path to the CMakeLists.txt along side the
-          # CMakePresets.json. Change if you need have CMakeLists.txt and CMakePresets.json
-          # located elsewhere.
-          # cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-
-          # This is the name of the CMakePresets.json's configuration to use to generate
-          # the project files. This configuration leverages the vcpkg.cmake toolchain file to
-          # run vcpkg and install all dependencies specified in vcpkg.json.
-          configurePreset: 'build-release-msvc'
-
-          # This is the name of the CMakePresets.json's configuration to build the project.
-          buildPreset: 'build-release-msvc'
-      - name: List $RUNNER_WORKSPACE after build
-        run: find $RUNNER_WORKSPACE
-        shell: bash
-    #env:
-    #  By default the action disables vcpkg's telemetry by defining VCPKG_DISABLE_METRICS. 
-    #  This behavior can be disabled by defining `VCPKG_ENABLE_METRICS` as follows.
-    #  VCPKG_ENABLE_METRICS: 1 
-    #
-    #  [OPTIONAL] Define the vcpkg's triplet you want to enforce, otherwise the default one
-    #  for the hosting system will be automatically choosen (x64 is the default on all platforms,
-    #  e.g. `x64-osx`).
-    #  VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }} 
+          cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+          configurePreset: build-release-msvc
+          buildPreset: build-release-msvc
