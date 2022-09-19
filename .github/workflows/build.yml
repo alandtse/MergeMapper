@@ -37,14 +37,14 @@ jobs:
         run: find $RUNNER_WORKSPACE
         shell: bash
       - name: Restore artifacts, or run vcpkg, build (and cache artifacts as post step)
-        uses: lukka/run-vcpkg@latest
+        uses: lukka/run-vcpkg@v10
         id: runvcpkg
         with:
           vcpkgDirectory: '${{ runner.workspace }}/b/vcpkg'
           vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
           # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
           runVcpkgInstall: true
-          vcpkgJsonGlob: '**/cmakepresets/vcpkg.json'
+          vcpkgJsonGlob: '**/vcpkg.json'
           appendedCacheKey: vcpkginstall
 
       - name: Prints output of run-vcpkg's action.
