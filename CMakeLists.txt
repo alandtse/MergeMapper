@@ -4,9 +4,12 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ########################################################################################################################
 ## Define project
 ########################################################################################################################
+set(NAME "MergeMapper")
+set(VERSION 1.2.0)
+
 project(
-        MergeMapper
-        VERSION 1.2.0
+        ${NAME}
+	VERSION ${VERSION}
         DESCRIPTION "A SKSE plugin to dynamically map zmerges."
         LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
