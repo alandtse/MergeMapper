@@ -87,7 +87,7 @@ jobs:
         run: dotnet tool install -g NexusUploader
       - name: Upload files to Nexus
         if: steps.semantic.outputs.new_release_published == 'true'
-        with:
+        env:
           UNEX_COOKIES: ${{ secrets.UNEX_COOKIES }}
           UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
           file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
