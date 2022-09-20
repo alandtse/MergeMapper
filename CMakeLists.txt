@@ -5,7 +5,7 @@ message("Using toolchain file ${CMAKE_TOOLCHAIN_FILE}.")
 ## Define project
 ########################################################################################################################
 set(NAME "MergeMapper")
-set(VERSION 1.2.0)
+set\(VERSION 1.2.1\)
 
 project(
         ${NAME}
