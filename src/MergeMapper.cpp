@@ -90,10 +90,8 @@ bool MergeMapperInterface001::GetMerges() {
                     auto espkey = esp;
                     std::transform(espkey.begin(), espkey.end(), espkey.begin(),
                                    [](auto ch) { return static_cast<char>(std::tolower(ch)); });
-                    if (idmap.size()) {
-                        logger::info(" Found {} maps to {} with {} mappings", esp, converted_merged, idmap.size());
-                        total += idmap.size();
-                    }
+                    logger::info(" Found {} maps to {} with {} mappings", esp, converted_merged, idmap.size());
+                    total += idmap.size();
                     if (mergeMap.contains(espkey)) logger::warn(" Duplicate {} found in {}", esp, converted_merged);
                     mergeMap[espkey]["name"] = converted_merged;
                     if (!idmap.empty()) {
