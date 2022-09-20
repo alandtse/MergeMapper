@@ -73,6 +73,27 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file_glob: true
-          file: build/release-msvc/*.7z
+          file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
           tag: v${{ steps.semantic.outputs.new_release_version }}
           overwrite: true
+      - name: Setup Dotnet
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '6.0.x'
+          include-prerelease: true
+      - name: Download NexusUploader
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: dotnet tool install -g NexusUploader
+      - name: Upload files to Nexus
+        if: steps.semantic.outputs.new_release_published == 'true'
+        with:
+          UNEX_COOKIES: ${{ secrets.UNEX_COOKIES }}
+          UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
+          file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
+          version: ${{ steps.semantic.outputs.new_release_version }}
+          changelog: ${{ steps.semantic.outputs.new_release_notes }}
+          modid: 74689
+        run: |
+          unex upload $modid $file -v $version
+          unex changelog $version "$changelog"
