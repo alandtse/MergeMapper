@@ -9,7 +9,7 @@
 #   that leverages the vcpkg's toolchain file. This will automatically run vcpkg to install dependencies
 #   described by the vcpkg.json manifest file. It will be a no-op if those are restored from cache.
 # - Finally builds the sources with Ninja.
-name: hosted-ninja-vcpkg-autocache
+name: Semantic Release
 on: [push, workflow_dispatch]
 
 jobs:
@@ -57,7 +57,7 @@ jobs:
             @semantic-release/changelog
             @semantic-release/git
             @google/semantic-release-replace-plugin
-          dry_run: true
+          dry_run: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run CMake with vcpkg.json manifest
