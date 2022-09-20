@@ -11,7 +11,7 @@
           {
             "files": ["CMakeLists.txt"],
             "from": "set\\(VERSION .*\\)",
-            "to": "set\\(VERSION ${nextRelease.version}\\)",
+            "to": "set(VERSION ${nextRelease.version})",
             "results": [
               {
                 "file": "CMakeLists.txt",
