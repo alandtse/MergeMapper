@@ -86,14 +86,21 @@ jobs:
         if: steps.semantic.outputs.new_release_published == 'true'
         run: dotnet tool install -g NexusUploader
       - name: Upload files to Nexus
+      # https://github.com/agc93/nexus-uploader
         if: steps.semantic.outputs.new_release_published == 'true'
         env:
           UNEX_COOKIES: ${{ secrets.UNEX_COOKIES }}
           UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
+          UNEX_GAME: skyrimspecialedition
+          UNEX_MODID: 74689
+          UNEX_FILENAME: MergeMapper
+          UNEX_FILEDESCRIPTION: |-
+            See Description -> Requirements for installation instructions.
+            PDB is for crash debugging and can be removed.
+          UNEX_PREVIOUSFILE: "auto"
           file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
           version: ${{ steps.semantic.outputs.new_release_version }}
           changelog: ${{ steps.semantic.outputs.new_release_notes }}
-          modid: 74689
         run: |
-          unex upload $modid $file -v $version
+          unex upload $UNEX_MODID $file -v $version
           unex changelog $version "$changelog"
