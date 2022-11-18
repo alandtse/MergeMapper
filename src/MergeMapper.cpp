@@ -13,6 +13,7 @@ namespace stl {
 }
 
 static nlohmann::json mergeMap;
+static nlohmann::json reverseMergeMap;
 
 using namespace MergeMapperPluginAPI;
 
@@ -44,12 +45,62 @@ unsigned int MergeMapperInterface001::GetBuildNumber() {
     return plugin->GetVersion().pack();
 }
 
+std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedPlugin) {
+    std::string line;
+    std::regex pluginRegex("^Copying records from ([\\w\\-. ]+)");
+    std::regex formIDRegex("^Copying[^\\[\n]*[[A-Z]+:([a-fA-F0-9]{8})");
+    std::smatch matches;
+    std::string originalPlugin = "";
+    RE::FormID formID;
+    std::string sFormID;
+    std::uint32_t count = 0;
+    auto mergedPluginKey = mergedPlugin;
+    // lowercase mergedPlugin since it is also a key for reversemap
+    toLower(mergedPluginKey);
+    auto constexpr mergePrefix = L"merge_";
+    for (const auto& entry : std::filesystem::directory_iterator(a_path)) {
+        const auto& path = entry.path();
+        const auto& file = path.filename();
+        if (entry.exists() && entry.is_regular_file() && file.wstring().starts_with(mergePrefix) &&
+            file.extension().string() == ".txt") {
+            logger::debug("mergedPlugin: Processing {}", path.string());
+            try {
+                std::ifstream input(path);
+                while (std::getline(input, line)) {
+                    if (std::regex_search(line, matches, pluginRegex)) {
+                        //unlike  mergedPlugin, originalPlugin is iterated against instead of used as a key so no need to lowercase
+                        originalPlugin = matches[1].str();
+                        logger::debug("\tFound processing record for {} from {}", originalPlugin, line);
+                    } else if (!originalPlugin.empty() && std::regex_search(line, matches, formIDRegex)) {
+                        count++;
+                        formID = std::stoi(matches[1].str(), 0, 16) & 0x00FFFFFF;
+                        sFormID = std::to_string(formID);
+                        toLower(sFormID);
+                        reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
+                        logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID], mergedPluginKey, originalPlugin,
+                                      sFormID,
+                                      line);
+                    }
+                    continue;
+                }
+                input.close();
+            } catch (std::exception& e) {
+                logger::warn("	Unable to open {}:{}",
+                             stl::utf16_to_utf8(path.wstring()).value_or("<unicode conversion error>"s), e.what());
+            }
+        }
+    }
+    return count;
+}
+
 bool MergeMapperInterface001::GetMerges() {
     using json = nlohmann::json;
     logger::info("Searching for merges within the Data folder");
     auto constexpr folder = R"(Data\)";
     json json_data;
     size_t total = 0;
+    size_t reverseMapTotal = 0;
     auto constexpr mergePrefix = L"Data\\merge - ";
     for (const auto& entry : std::filesystem::directory_iterator(folder)) {
         // zMerge folders have name "merge - 018auri"
@@ -90,7 +141,9 @@ bool MergeMapperInterface001::GetMerges() {
                 continue;
             }
             auto count = 0;
+            auto reverseMapCount = 0;
             if (mergedPlugin != "" && !json_data.empty()) {
+                reverseMapCount += parseMergeLog(path, mergedPlugin);
                 for (auto& [originalPlugin, idmap] : json_data.items()) {
                     auto originalPluginKey = originalPlugin; // key is lowercase since we search on it
                     toLower(originalPluginKey);
@@ -108,10 +161,16 @@ bool MergeMapperInterface001::GetMerges() {
                         auto storedValue = std::to_string(std::stoi(sNewFormID.get<std::string>(), 0, 16));
                         toLower(storedValue);
                         mergeMap[originalPluginKey]["map"][storedKey] = storedValue;
+                        reverseMergeMap[mergedPluginKey][originalPlugin][storedValue] = storedKey;
+                        logger::debug("\tStored mapped value {} at reverseMergedMap[{}][{}][{}]",
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue], mergedPluginKey,
+                                        originalPlugin,
+                                        storedValue);
                     }
                     count += idmap.size();
-                    logger::info(" Found {} maps to {} with {} mappings", originalPlugin, mergedPlugin, count);
+                    logger::info(" Found {} maps to {} with {} mappings and {} reverse mappings", originalPlugin, mergedPlugin, count, reverseMapCount);
                     total += count;
+                    reverseMapTotal += reverseMapCount;
                 }
             }
         }
@@ -120,7 +179,7 @@ bool MergeMapperInterface001::GetMerges() {
         logger::info("\tNo merges were found within the Data folder");
         return false;
     }
-    logger::info("\t{} merges found with {} mappings", mergeMap.size(), total);
+    logger::info("\t{} merges found with {} mappings and {} reverse mappings", mergeMap.size(), total, reverseMapTotal);
     return true;
 }
 std::pair<const char*, RE::FormID> GetNewFormID(std::wstring& oldName, const RE::FormID oldFormID) {
@@ -154,5 +213,32 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetNewFormID(const c
         logger::debug("GetNewFormID:\t{} -> {} {:x}", oldName, modName, formID);
     else if (oldFormID != formID)
         logger::debug("GetNewFormID:\t{} {:x} -> {:x}", oldName, oldFormID, formID);
+    return std::make_pair(modName, formID);
+}
+
+std::pair<const char*, RE::FormID> MergeMapperInterface001::GetOriginalFormID(const char* newName,
+                                                                              const RE::FormID newFormID) {
+    const char* modName = newName;
+    RE::FormID formID = newFormID;
+    std::string mergedPluginKey{newName};
+    // lowercase mergedPlugin since it is also a key for reverseMergeMap
+    toLower(mergedPluginKey);
+    if (reverseMergeMap.contains(mergedPluginKey)) {
+        for (auto& [originalPlugin, value] : reverseMergeMap[mergedPluginKey].items()) {
+            auto sFormID = std::to_string(formID);
+            toLower(sFormID);
+            if (value.contains(sFormID)) {
+                modName = originalPlugin.c_str();
+                formID = std::stoi(value[sFormID].get<std::string>());
+                break;
+            }
+        }
+    }
+    if (newName != modName && newFormID != formID)
+        logger::debug("GetOriginalFormID:\t{} {:x} -> {} {:x}", newName, newFormID, modName, formID);
+    else if (newName != modName)
+        logger::debug("GetOriginalFormID:\t{} -> {} {:x}", newName, modName, formID);
+    else if (newFormID != formID)
+        logger::debug("GetOriginalFormID:\t{} {:x} -> {:x}", newName, newFormID, formID);
     return std::make_pair(modName, formID);
 }

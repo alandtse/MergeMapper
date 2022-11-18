@@ -27,6 +27,14 @@ namespace MergeMapperPluginAPI {
         /// @return a pair with char* modName and uint32 FormID. If no merge is found, it will return oldName and
         /// oldFormID.
         virtual std::pair<const char*, RE::FormID> GetNewFormID(const char* oldName, const RE::FormID oldFormID) = 0;
+
+        /// @brief Get the original modName and formID
+        /// @param newName The new merged modName char* e.g., Merge.esp
+        /// @param newFormID The new merged formID in hex format as an uint_32 e.g., 0x134ab
+        /// @return a pair with char* modName and uint32 FormID. If no merge is found, it will return newName and
+        /// newFormID.
+        virtual std::pair<const char*, RE::FormID> GetOriginalFormID(const char* newName,
+                                                                     const RE::FormID newFormID) = 0;
     };
 
 }  // namespace MergeMapperPluginAPI
