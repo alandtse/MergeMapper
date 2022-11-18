@@ -1,6 +1,8 @@
 #pragma once
 
 #include <SKSE/SKSE.h>
+#undef max
+#undef min
 #include <articuno/articuno.h>
 
 namespace Sample {

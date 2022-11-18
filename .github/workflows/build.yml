@@ -22,7 +22,7 @@ jobs:
         os: [windows-latest]
         include:
           - os: windows-latest
-            vcpkgCommitId: '01b29f6d8212bc845da64773b18665d682f5ab66'
+            vcpkgCommitId: '6f7ffeb18f99796233b958aaaf14ec7bd4fb64b2'
 
     steps:
       - uses: actions/checkout@v3
@@ -56,6 +56,7 @@ jobs:
           extra_plugins: |
             @semantic-release/changelog
             @semantic-release/git
+            @semantic-release/github@"https://registry.npmjs.org/@achingbrain/semantic-release-github/-/semantic-release-github-0.0.0.tgz"
             @google/semantic-release-replace-plugin
           dry_run: false
         env:
@@ -65,8 +66,8 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-          configurePreset: build-release-msvc
-          buildPreset: release-msvc
+          configurePreset: Release-MSVC
+          buildPreset: Release-MSVC
       - name: Upload files to a GitHub release
         if: steps.semantic.outputs.new_release_published == 'true'
         uses: svenstaro/upload-release-action@2.3.0
