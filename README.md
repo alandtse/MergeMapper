@@ -59,7 +59,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 ```
 3. Use interface to query Mod/formID info.
 ```cpp
-// From Base Object Swapper https://github.com/powerof3/BaseObjectSwapper
+// Example from Base Object Swapper https://github.com/powerof3/BaseObjectSwapper of finding new formID
 			const auto formPair = string::split(a_str, "~"); // splits "FormID~modName" e.g. 0x10C0E3~Skyrim.esm
 			if (g_mergeMapperInterface){
 				const auto [modName, formID] = g_mergeMapperInterface->GetNewFormID(formPair[1].c_str(), std::stoi(formPair[0], 0, 16));
@@ -67,6 +67,39 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			}else{
 				return RE::TESDataHandler::GetSingleton()->LookupFormID(std::stoi(formPair[0], 0, 16), formPair[1]);
       }
+
+// Example from MCM Helper https://github.com/alandtse/MCM-Helper of recovering original mod name and formid from merged reference.
+	auto modName = std::filesystem::path(filename).stem().string();
+	if (g_mergeMapperInterface) {
+		modName = std::filesystem::path(filename).filename().string();
+		auto formID = a_form->GetFormID() & 0x00FFFFFF;
+		auto name = a_form->GetName();
+		auto editorID = a_form->GetFormEditorID();
+		logger::debug("Attempting to find original mod for {} ({:x}) {}", name, formID, editorID);
+		const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(
+			modName.c_str(),
+			formID);
+		std::string conversion_log = "";
+		if (formID && mergedFormID && formID != mergedFormID) {
+			conversion_log = std::format("0x{:x}->0x{:x}", formID, mergedFormID);
+			formID = mergedFormID;
+		}
+		const std::string mergedModString{ mergedModName };
+		if (!(modName.empty()) && !mergedModString.empty() && modName != mergedModString) {
+			if (conversion_log.empty())
+				conversion_log = std::format("{}->{}", modName, mergedModString);
+			else
+				conversion_log = std::format(
+					"{}~{}->{}",
+					conversion_log,
+					modName,
+					mergedModString);
+			modName = mergedModString;
+		}
+		modName = modName.substr(0, modName.find(".es"));
+		if (!conversion_log.empty())
+			logger::debug("\t\tFound original: {}", conversion_log);
+	}
 ```
 
 ### Manage dependency with vcpkg
