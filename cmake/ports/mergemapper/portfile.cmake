@@ -2,8 +2,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO alandtse/MergeMapper
-    REF 1b122ae01cd13e19f0ec16d4605e813dcc7946c2
-    SHA512 ab45ef9087cc79b432ff8b56e3ffd9bfda4c2dfc43d6678add81210b3ac8074c9d4d09cfcf43a41ee6b2a2b33ade1eab62db99ee922c8feac91a063888fe368b
+    REF 9d710f2a2e055acb13e41319cc19e3255fa0538a
+    SHA512 4e9b49aaaf5ac969956bf066cb92423b42a4ba6681e188b792ee3494fba3084dccc744dfc4722ee8d8df1b245e5ee4b20a503e9610fadb546df921e6fae42506
     HEAD_REF main
 )
 
