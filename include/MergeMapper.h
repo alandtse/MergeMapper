@@ -29,6 +29,16 @@ namespace MergeMapperPluginAPI {
         /// @return a pair with char* modName and uint32 FormID. If not able to find original, it will return newName and
         /// newFormID.
         std::pair<const char*, RE::FormID> GetOriginalFormID(const char* newName, const RE::FormID newFormID);
+
+        /// @brief Whether modName is a zmerge output file. To find old file use GetOldFormID(modName, 0)
+        /// @param modName The modName to check, char* e.g., merged1.esp
+        /// @return true if merged
+        bool isMerge(const char* modName);
+
+        /// @brief Whether modName was an input to a zmerge file. To find new file use GetNewFormID(modName, 0)
+        /// @param modName The modName to check, char* e.g., input1.esp
+        /// @return true if was merged into some file
+        bool wasMerged(const char* modName);
     };
 
     namespace Hook {

@@ -245,3 +245,15 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetOriginalFormID(co
         logger::debug("GetOriginalFormID:\t{} {:x} -> {:x}", newName, newFormID, formID);
     return std::make_pair(modName, formID);
 }
+
+bool MergeMapperPluginAPI::MergeMapperInterface001::isMerge(const char* modName) { 
+    std::string espkey = modName;
+    toLower(espkey);
+    return reverseMergeMap.contains(espkey);
+}
+
+bool MergeMapperPluginAPI::MergeMapperInterface001::wasMerged(const char* modName) { 
+    std::string espkey = modName;
+    toLower(espkey);
+    return mergeMap.contains(espkey);
+}
