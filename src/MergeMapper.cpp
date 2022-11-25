@@ -47,9 +47,8 @@ unsigned int MergeMapperInterface001::GetBuildNumber() {
 
 std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedPlugin) {
     std::string line;
-    std::regex pluginRegex("^Copying records from ([\\w\\-. ]+)");
-    std::regex formIDRegex("^Copying[^\\[\n]*[[A-Z]+:([a-fA-F0-9]{8})");
-    std::smatch matches;
+    const std::string pluginStart = "Copying records from ";
+    const std::string formIDStart = "Copying ";
     std::string originalPlugin = "";
     RE::FormID formID;
     std::string sFormID;
@@ -67,12 +66,17 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
             try {
                 std::ifstream input(path);
                 while (std::getline(input, line)) {
-                    if (std::regex_search(line, matches, pluginRegex)) {
-                        //unlike  mergedPlugin, originalPlugin is iterated against instead of used as a key so no need to lowercase
-                        originalPlugin = matches[1].str();
+                    const auto closeBracketPos = line.find("]");
+                    if (line.starts_with(pluginStart)) {
+                        // unlike mergedPlugin, originalPlugin is iterated against instead of used as a key so no need
+                        // to lowercase
+                        originalPlugin = line.substr(pluginStart.length());
                         logger::debug("\tFound processing record for {} from {}", originalPlugin, line);
-                    } else if (!originalPlugin.empty() && std::regex_search(line, matches, formIDRegex)) {
+                    } else if (!originalPlugin.empty() && line.starts_with(formIDStart) &&
+                               closeBracketPos != std::string::npos) {
                         count++;
+                        // parse formid from log, e.g., 1C001841 from Copying WodoWigQuestLeafAngelic [DLBR:1C001841]
+                        formID = std::stoi(line.substr(closeBracketPos - 8, 8), 0, 16) & 0x00FFFFFF;
                         sFormID = std::format("{:x}"sv, formID);
                         toLower(sFormID);
                         reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
