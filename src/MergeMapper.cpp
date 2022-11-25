@@ -81,15 +81,14 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         toLower(sFormID);
                         reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
                         logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID], mergedPluginKey, originalPlugin,
-                                      sFormID,
-                                      line);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID], mergedPluginKey,
+                                      originalPlugin, sFormID, line);
                     }
                     continue;
                 }
                 input.close();
             } catch (std::exception& e) {
-                logger::warn("	Unable to open {}:{}",
+                logger::warn("	Unable to process {}:\t{}",
                              stl::utf16_to_utf8(path.wstring()).value_or("<unicode conversion error>"s), e.what());
             }
         }
@@ -138,7 +137,8 @@ bool MergeMapperInterface001::GetMerges() {
             }
             // json requires wstring conversion to utf encoding
             // https://json.nlohmann.me/home/faq/#parse-errors-reading-non-ascii-characters
-            auto mergedPlugin = stl::utf16_to_utf8(espPath).value_or(""s); // the final merged plugin that contains original plugins
+            auto mergedPlugin =
+                stl::utf16_to_utf8(espPath).value_or(""s);  // the final merged plugin that contains original plugins
             if (!std::filesystem::exists(folder + mergedPlugin)) {
                 logger::warn("	{} does not exist, not processing merges for this file", mergedPlugin);
                 continue;
@@ -148,7 +148,7 @@ bool MergeMapperInterface001::GetMerges() {
             if (mergedPlugin != "" && !json_data.empty()) {
                 reverseMapCount += parseMergeLog(path, mergedPlugin);
                 for (auto& [originalPlugin, idmap] : json_data.items()) {
-                    auto originalPluginKey = originalPlugin; // key is lowercase since we search on it
+                    auto originalPluginKey = originalPlugin;  // key is lowercase since we search on it
                     toLower(originalPluginKey);
                     if (mergeMap.contains(originalPluginKey))
                         logger::warn("\tDuplicate {} found merged in {}; one can be removed", originalPlugin,
@@ -167,11 +167,11 @@ bool MergeMapperInterface001::GetMerges() {
                         reverseMergeMap[mergedPluginKey][originalPlugin][storedValue] = storedKey;
                         logger::debug("\tStored mapped value {} at reverseMergedMap[{}][{}][{}]",
                                       reverseMergeMap[mergedPluginKey][originalPlugin][storedValue], mergedPluginKey,
-                                        originalPlugin,
-                                        storedValue);
+                                      originalPlugin, storedValue);
                     }
                     count += idmap.size();
-                    logger::info(" Found {} maps to {} with {} mappings and {} reverse mappings", originalPlugin, mergedPlugin, count, reverseMapCount);
+                    logger::info(" Found {} maps to {} with {} mappings and {} reverse mappings", originalPlugin,
+                                 mergedPlugin, count, reverseMapCount);
                     total += count;
                     reverseMapTotal += reverseMapCount;
                 }
