@@ -73,8 +73,7 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         logger::debug("\tFound processing record for {} from {}", originalPlugin, line);
                     } else if (!originalPlugin.empty() && std::regex_search(line, matches, formIDRegex)) {
                         count++;
-                        formID = std::stoi(matches[1].str(), 0, 16) & 0x00FFFFFF;
-                        sFormID = std::to_string(formID);
+                        sFormID = std::format("{:x}"sv, formID);
                         toLower(sFormID);
                         reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
                         logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
@@ -156,9 +155,9 @@ bool MergeMapperInterface001::GetMerges() {
                     // store original name
                     mergeMap[originalPluginKey]["name"] = mergedPlugin;
                     for (auto& [sOriginalFormID, sNewFormID] : idmap.items()) {
-                        auto storedKey = std::to_string(std::stoi(sOriginalFormID, 0, 16));
+                        auto storedKey = std::format("{:x}"sv, std::stoi(sOriginalFormID, 0, 16));
                         toLower(storedKey);
-                        auto storedValue = std::to_string(std::stoi(sNewFormID.get<std::string>(), 0, 16));
+                        auto storedValue = std::format("{:x}"sv, std::stoi(sNewFormID.get<std::string>(), 0, 16));
                         toLower(storedValue);
                         mergeMap[originalPluginKey]["map"][storedKey] = storedValue;
                         reverseMergeMap[mergedPluginKey][originalPlugin][storedValue] = storedKey;
@@ -199,11 +198,11 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetNewFormID(const c
     // check for merged esps
     if (mergeMap.contains(espkey)) {
         modName = mergeMap[espkey]["name"].get_ptr<nlohmann::json::string_t*>()->c_str();
-        auto storedKey = std::to_string(formID);
+        auto storedKey = std::format("{:x}"sv, formID);
         if (!mergeMap[espkey]["map"].empty()) {
             toLower(storedKey);
             if (mergeMap[espkey]["map"].contains(storedKey)) {
-                formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>());
+                formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>(), 0, 16);
             }
         }
     }
@@ -225,11 +224,11 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetOriginalFormID(co
     toLower(mergedPluginKey);
     if (reverseMergeMap.contains(mergedPluginKey)) {
         for (auto& [originalPlugin, value] : reverseMergeMap[mergedPluginKey].items()) {
-            auto sFormID = std::to_string(formID);
+            auto sFormID = std::format("{:x}"sv, formID);
             toLower(sFormID);
             if (value.contains(sFormID)) {
                 modName = originalPlugin.c_str();
-                formID = std::stoi(value[sFormID].get<std::string>());
+                formID = std::stoi(value[sFormID].get<std::string>(), 0, 16);
                 break;
             }
         }
