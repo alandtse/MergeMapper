@@ -75,7 +75,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file_glob: true
           file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
-          tag: v${{ steps.semantic.outputs.new_release_version }}
+          tag: ${{ steps.semantic.outputs.new_release_git_tag }}
           overwrite: true
       - name: Setup Dotnet
         if: steps.semantic.outputs.new_release_published == 'true'
@@ -99,7 +99,7 @@ jobs:
             PDB is for crash debugging and can be removed.
           UNEX_PREVIOUSFILE: "auto"
           file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
-          version: v${{ steps.semantic.outputs.new_release_version }}
+          version: ${{ steps.semantic.outputs.new_release_version }}
           changelog: ${{ steps.semantic.outputs.new_release_notes }}
         run: |
           unex upload $UNEX_MODID $file -v $version
