@@ -3,7 +3,7 @@
     {
       "kind": "git",
       "repository": "https://gitlab.com/colorglass/vcpkg-colorglass",
-      "baseline": "1b279b20c7e0db1c9d549ff3b64e024c01317b55",
+      "baseline": "eb2f2bd143b8f7c52b57ef5a822163b56f7be7d6",
       "packages": [
         "articuno",
         "commonlibsse-ng",
@@ -11,5 +11,10 @@
         "skse"
       ]
     }
-  ]
+  ],
+  "default-registry": {
+      "kind": "git",
+      "repository": "https://github.com/microsoft/vcpkg.git",
+      "baseline": "6a3dd0874f153f8b375ec26210ea6d41dee3bb26"
+  }
 }
