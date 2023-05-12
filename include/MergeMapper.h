@@ -30,6 +30,10 @@ namespace MergeMapperPluginAPI {
         /// and newFormID.
         std::pair<const char*, RE::FormID> GetOriginalFormID(const char* newName, const RE::FormID newFormID);
 
+        /// @brief Check if any loaded plugins have also been merged and are redundant.
+        /// @return true if any redundant plugins
+        bool CheckForRedundantPlugins();
+
         /// @brief Whether modName is a zmerge output file. To find old file use GetOldFormID(modName, 0)
         /// @param modName The modName to check, char* e.g., merged1.esp
         /// @return true if merged

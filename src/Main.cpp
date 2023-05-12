@@ -157,6 +157,7 @@ namespace {
                     case MessagingInterface::kDataLoaded:  // All ESM/ESL/ESP plugins have loaded, main menu is now
                                                            // active.
                         // It is now safe to access form data.
+                        g_interface001.CheckForRedundantPlugins();
                         break;
 
                     // Skyrim game events.

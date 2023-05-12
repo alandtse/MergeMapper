@@ -257,3 +257,40 @@ bool MergeMapperPluginAPI::MergeMapperInterface001::wasMerged(const char* modNam
     toLower(espkey);
     return mergeMap.contains(espkey);
 }
+
+bool MergeMapperInterface001::CheckForRedundantPlugins() {
+    const auto datahandler = RE::TESDataHandler::GetSingleton();
+    bool result = false;
+    logger::info(fmt::runtime("Checking for redundant plugins that can be disabled"));
+    if (datahandler) {
+        const auto lightCount = datahandler->GetLoadedLightModCount();
+        const auto modCount = datahandler->GetLoadedModCount();
+        const auto& files = datahandler->GetLoadedMods();
+        const auto& smallfiles = datahandler->GetLoadedLightMods();
+        const auto fileFormat = [&]() { return "\t[{:>02X}]{:"s + (lightCount ? "5"s : "1"s) + "}{}"s; }();
+        std::string plugin;
+        std::string oldPlugin;
+        // use lambda to check if plugin merged, print warning, and return bool
+        auto isRedundant = [](auto plugin, auto oldPlugin) {
+            if (plugin != oldPlugin) {
+                logger::warn(fmt::runtime("\tRedundant {} already loaded in merge {}; please disable {}"), plugin, oldPlugin, plugin);
+                return true;
+            }
+            return false;
+        };
+        for (auto i = 0; i < modCount; i++) {
+            const auto file = files[i];
+            plugin = std::string{file->GetFilename()};
+            oldPlugin = std::string{MergeMapperInterface001::GetNewFormID(plugin.c_str(), 0).first};        
+            logger::debug(fmt::runtime(fileFormat), file->GetCompileIndex(), "", plugin);
+            result = isRedundant(plugin, oldPlugin) || result; 
+        }
+        for (auto i = 0; i < lightCount; i++) {
+            const auto file = smallfiles[i];
+            plugin = std::string{file->GetFilename()};
+            logger::debug(fmt::runtime("\t[FE:{:>03X}] {}"), file->GetSmallFileCompileIndex(), plugin);
+            result = isRedundant(plugin, oldPlugin) || result;
+        }
+    }
+    return result;
+}
