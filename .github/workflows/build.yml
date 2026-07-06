@@ -23,6 +23,11 @@ jobs:
         include:
           - os: windows-latest
             vcpkgCommitId: '6f7ffeb18f99796233b958aaaf14ec7bd4fb64b2'
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_git_tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+      new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
 
     steps:
       - uses: actions/checkout@v3
@@ -77,30 +82,25 @@ jobs:
           file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
           tag: ${{ steps.semantic.outputs.new_release_git_tag }}
           overwrite: true
-      - name: Setup Dotnet
-        if: steps.semantic.outputs.new_release_published == 'true'
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '3.1.x'
-      - name: Download NexusUploader
-        if: steps.semantic.outputs.new_release_published == 'true'
-        run: dotnet tool install -g NexusUploader
-      - name: Upload files to Nexus
-      # https://github.com/agc93/nexus-uploader
-        if: steps.semantic.outputs.new_release_published == 'true'
-        env:
-          UNEX_COOKIES: ${{ secrets.UNEX_COOKIES }}
-          UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
-          UNEX_GAME: skyrimspecialedition
-          UNEX_MODID: 74689
-          UNEX_FILENAME: MergeMapper
-          UNEX_FILEDESCRIPTION: |-
-            See Description -> Requirements for installation instructions.
-            PDB is for crash debugging and can be removed.
-          UNEX_PREVIOUSFILE: "auto"
-          file: build/release-msvc/MergeMapper_${{ steps.semantic.outputs.new_release_version }}.7z
-          version: ${{ steps.semantic.outputs.new_release_version }}
-          changelog: ${{ steps.semantic.outputs.new_release_notes }}
-        run: |
-          unex upload $UNEX_MODID $file -v $version
-          unex changelog $version "$changelog"
+
+  nexus-upload:
+    needs: job
+    if: needs.job.outputs.new_release_published == 'true'
+    uses: alandtse/nexus-workflows/.github/workflows/upload-nexus.yml@dceaf2d82ecf19569a0282930cc4322422c44b3a # v1.5.2
+    with:
+      nexus_game_id: skyrimspecialedition
+      nexus_mod_id: "74689"
+      tag_name: ${{ needs.job.outputs.new_release_git_tag }}
+      mod_version: ${{ needs.job.outputs.new_release_version }}
+      mod_filename: MergeMapper
+      changelog: ${{ needs.job.outputs.new_release_notes }}
+      file_description: |-
+        See Description -> Requirements for installation instructions.
+        PDB is for crash debugging and can be removed.
+      previous_file: auto
+      # Idempotent re-runs; safe against duplicate changelog reposts as of
+      # nexus-workflows v1.5.2 (alandtse/nexus-workflows#8).
+      check_existing: true
+    secrets:
+      UNEX_NEXUSMODS_SESSION_COOKIE: ${{ secrets.UNEX_NEXUSMODS_SESSION_COOKIE }}
+      UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
