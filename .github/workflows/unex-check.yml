@@ -10,24 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Dotnet
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '3.1.x'
-          include-prerelease: false
-      - name: Download NexusUploader
-        run: dotnet tool install -g NexusUploader
-      - name: Check Nexus Cookies
-      # https://github.com/agc93/nexus-uploader
+          dotnet-version: 8.x.x
+      - name: Download BUTR.NexusUploader
+        run: dotnet tool install -g BUTR.NexusUploader
+      - name: Check Nexus session cookie
+        # https://github.com/BUTR/BUTR.NexusUploader
         env:
-          UNEX_COOKIES: ${{ secrets.UNEX_COOKIES }}
-          UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
+          UNEX_SESSION_COOKIE: ${{ secrets.UNEX_NEXUSMODS_SESSION_COOKIE }}
         run: |
-          unex check --cookie
+          unex check --session-cookie "$UNEX_SESSION_COOKIE"
       - name: Check Nexus API Key
-      # https://github.com/agc93/nexus-uploader
-      # https://www.nexusmods.com/users/myaccount?tab=api%20access
+        # https://github.com/BUTR/BUTR.NexusUploader
+        # https://www.nexusmods.com/users/myaccount?tab=api%20access
         env:
-          UNEX_COOKIES: ${{ secrets.UNEX_COOKIES }}
           UNEX_APIKEY: ${{ secrets.UNEX_APIKEY }}
         run: |
-          unex check --key $UNEX_APIKEY
+          unex check --key "$UNEX_APIKEY"
