@@ -246,13 +246,13 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetOriginalFormID(co
     return std::make_pair(modName, formID);
 }
 
-bool MergeMapperPluginAPI::MergeMapperInterface001::isMerge(const char* modName) { 
+bool MergeMapperPluginAPI::MergeMapperInterface001::isMerge(const char* modName) {
     std::string espkey = modName;
     toLower(espkey);
     return reverseMergeMap.contains(espkey);
 }
 
-bool MergeMapperPluginAPI::MergeMapperInterface001::wasMerged(const char* modName) { 
+bool MergeMapperPluginAPI::MergeMapperInterface001::wasMerged(const char* modName) {
     std::string espkey = modName;
     toLower(espkey);
     return mergeMap.contains(espkey);
@@ -281,9 +281,9 @@ bool MergeMapperInterface001::CheckForRedundantPlugins() {
         for (auto i = 0; i < modCount; i++) {
             const auto file = files[i];
             plugin = std::string{file->GetFilename()};
-            oldPlugin = std::string{MergeMapperInterface001::GetNewFormID(plugin.c_str(), 0).first};        
+            oldPlugin = std::string{MergeMapperInterface001::GetNewFormID(plugin.c_str(), 0).first};
             logger::debug(fmt::runtime(fileFormat), file->GetCompileIndex(), "", plugin);
-            result = isRedundant(plugin, oldPlugin) || result; 
+            result = isRedundant(plugin, oldPlugin) || result;
         }
         for (auto i = 0; i < lightCount; i++) {
             const auto file = smallfiles[i];

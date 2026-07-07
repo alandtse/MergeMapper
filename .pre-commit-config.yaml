@@ -1,0 +1,27 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        exclude: ^\.vscode/  # VS Code config files are JSONC (allow comments)
+      - id: check-added-large-files
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+        # lukka/run-vcpkg's own templates use `${{ runner.workspace }}` (an Azure
+        # Pipelines-style context carried over as boilerplate); it evaluates to
+        # empty on GitHub-hosted runners but the resulting relative path still
+        # resolves correctly in practice (confirmed by real CI runs). Swapping to
+        # `github.workspace` is not equivalent (one directory level deeper) and
+        # would change the actual vcpkg cache path, so this is suppressed rather
+        # than "fixed".
+        args:
+          - -ignore
+          - 'property "workspace" is not defined in object type'
