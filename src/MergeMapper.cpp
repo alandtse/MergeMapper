@@ -288,6 +288,7 @@ bool MergeMapperInterface001::CheckForRedundantPlugins() {
         for (auto i = 0; i < lightCount; i++) {
             const auto file = smallfiles[i];
             plugin = std::string{file->GetFilename()};
+            oldPlugin = std::string{MergeMapperInterface001::GetNewFormID(plugin.c_str(), 0).first};
             logger::debug(fmt::runtime("\t[FE:{:>03X}] {}"), file->GetSmallFileCompileIndex(), plugin);
             result = isRedundant(plugin, oldPlugin) || result;
         }
