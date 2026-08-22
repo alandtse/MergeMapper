@@ -98,7 +98,7 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
 
 bool MergeMapperInterface001::GetMerges() {
     using json = nlohmann::json;
-    logger::info("Searching for merges within the Data folder");
+    logger::info("Searching Data\\ for zMerge merges...");
     auto constexpr folder = R"(Data\)";
     json json_data;
     size_t total = 0;
@@ -179,7 +179,9 @@ bool MergeMapperInterface001::GetMerges() {
         }
     }
     if (mergeMap.empty()) {
-        logger::info("\tNo merges were found within the Data folder");
+        logger::info(
+            "\tNo zMerge merges found in Data\\. MergeMapper has nothing to do and will stay inactive; this is "
+            "expected unless you use zMerge and is not an error.");
         return false;
     }
     logger::info("\t{} merges found with {} mappings and {} reverse mappings", mergeMap.size(), total, reverseMapTotal);
