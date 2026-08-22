@@ -194,13 +194,20 @@ SKSEPluginLoad(const LoadInterface* skse) {
     auto* plugin = PluginDeclaration::GetSingleton();
     auto version = plugin->GetVersion();
     log::info("{} {} is loading...", plugin->GetName(), version);
+    log::info("Running on Skyrim {} {}", REL::Module::IsVR() ? "VR" : REL::Module::IsAE() ? "AE" : "SE",
+              REL::Module::get().version());
 
-    Init(skse);
+    // false: skip SKSE's own log init, which would reopen (truncate) this log file and
+    // silently drop the messages already written above via our own InitializeLogging().
+    Init(skse, false);
     if (g_interface001.GetMerges()) {
         g_mergeMapperInterface = &g_interface001;
         InitializeMessaging();
-    }else
-        log::info("{} disabled because no merges found.", plugin->GetName());
+    } else
+        log::info(
+            "{} found no zMerge merges to track; staying inactive. This is expected unless you use zMerge and is "
+            "not an error.",
+            plugin->GetName());
     // InitializeSerialization();
     // InitializePapyrus();
 

@@ -1,0 +1,163 @@
+# Copyright (c) 2020-2021-2022 Luca Cappa
+# Released under the term specified in file LICENSE.txt
+# SPDX short identifier: MIT
+#
+# Reusable workflow for building MergeMapper
+# This workflow restores vcpkg artifacts from cache and builds using CMake with vcpkg toolchain
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      preset:
+        description: 'CMake preset to use for build'
+        type: string
+        required: false
+        default: 'Release-MSVC'
+      version:
+        description: 'Version string for the build'
+        type: string
+        required: false
+        default: ''
+      upload-artifact:
+        description: 'Whether to upload build artifact'
+        type: boolean
+        required: false
+        default: false
+      ref:
+        description: 'Git ref to checkout'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      artifact-name:
+        description: 'Name of the uploaded artifact'
+        value: ${{ jobs.build.outputs.artifact-name }}
+      artifact-path:
+        description: 'Path to the built artifact'
+        value: ${{ jobs.build.outputs.artifact-path }}
+      normalized_version:
+        description: 'Normalized version string (v-prefix stripped)'
+        value: ${{ jobs.build.outputs.normalized_version }}
+
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-latest
+    if: github.repository_owner == 'alandtse'
+    timeout-minutes: 60
+    permissions:
+      contents: read
+
+    env:
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: "recursive"
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+
+      - name: Extract vcpkg baseline from vcpkg.json
+        id: vcpkg_baseline
+        shell: pwsh
+        run: |
+          $vcpkgJson = Get-Content vcpkg.json | ConvertFrom-Json
+          $baseline = $vcpkgJson.'builtin-baseline'
+          echo "baseline=$baseline" >> $env:GITHUB_OUTPUT
+          echo "Using vcpkg baseline from vcpkg.json: $baseline"
+
+      - uses: lukka/get-cmake@591817e96fcad43505fb4eae36172462abb3a42e # v4.3.3
+
+      - name: Restore artifacts, or setup vcpkg (do not install any package)
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
+        id: runvcpkg
+        with:
+          vcpkgDirectory: "${{ github.workspace }}/b/vcpkg"
+          vcpkgGitCommitId: "${{ steps.vcpkg_baseline.outputs.baseline }}"
+          vcpkgJsonGlob: "vcpkg.json"
+
+      - name: Prints output of run-vcpkg's action
+        run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}'"
+
+      # x-gha reads the Actions cache endpoint from these two variables, which GitHub
+      # only exposes to the github-script runtime — re-export them so vcpkg sees them.
+      - name: Enable vcpkg GitHub Actions binary cache
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Run CMake with vcpkg.json manifest
+        uses: lukka/run-cmake@5d55ea7949e25f69f0ecb516d8d572297e03a956 # v10
+        with:
+          cmakeListsTxtPath: "${{ github.workspace }}/CMakeLists.txt"
+          configurePreset: ${{ inputs.preset }}
+          buildPreset: ${{ inputs.preset }}
+
+      - name: Extract project version from CMakeLists.txt
+        id: project_version
+        shell: pwsh
+        run: |
+          $cmakeLists = Get-Content CMakeLists.txt
+          $versionLine = $cmakeLists | Where-Object { $_ -match 'set\(VERSION\s+(.+)\)' }
+          if ($versionLine) {
+            $version = $matches[1]
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+            echo "Extracted version: $version"
+          } else {
+            echo "Version not found in CMakeLists.txt"
+            exit 1
+          }
+
+      - name: Validate and normalize version
+        id: normalize
+        shell: pwsh
+        run: |
+          $extracted = "${{ steps.project_version.outputs.version }}"
+
+          if ("${{ inputs.version }}" -ne "") {
+            $version = "${{ inputs.version }}"
+            $version = $version.Trim()
+            if ($version -match '^v(.+)$') {
+              $version = $matches[1]
+            }
+            if ($version -notmatch '^\d+\.\d+\.\d+$') {
+              echo "Invalid version format: $version. Expected format: x.y.z"
+              exit 1
+            }
+            if ($version -ne $extracted) {
+              echo "Input version $version does not match built version $extracted"
+              exit 1
+            }
+            echo "normalized_version=$version" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "normalized_version=$extracted" >> $env:GITHUB_OUTPUT
+          }
+
+          echo "Using version: $($extracted)"
+
+      - name: Set artifact info
+        id: artifact_info
+        shell: pwsh
+        run: |
+          $version = "${{ steps.project_version.outputs.version }}"
+          $artifactName = "MergeMapper_$version"
+          $artifactPath = "build/release-msvc/MergeMapper_$version.7z"
+          echo "artifact-name=$artifactName" >> $env:GITHUB_OUTPUT
+          echo "artifact-path=$artifactPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload artifact
+        if: inputs.upload-artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.artifact_info.outputs.artifact-name }}
+          path: ${{ steps.artifact_info.outputs.artifact-path }}
+          if-no-files-found: error
+
+    outputs:
+      artifact-name: ${{ steps.artifact_info.outputs.artifact-name }}
+      artifact-path: ${{ steps.artifact_info.outputs.artifact-path }}
+      normalized_version: ${{ steps.normalize.outputs.normalized_version }}

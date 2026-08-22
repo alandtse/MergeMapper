@@ -1,0 +1,11 @@
+--- a/include/articuno/archives/ryml/ryml_parser.h
++++ b/include/articuno/archives/ryml/ryml_parser.h
+@@ -16,7 +16,7 @@
+ 		::ryml::Tree parse(::std::basic_istream<Char, Traits>& input) {
+ 			::std::basic_string<Char, Traits, Alloc> raw(::std::istreambuf_iterator<Char, Traits>(input), {});
+ 			_content = ::gluino::try_move(::gluino::string_cast<char>(raw));
+-			return ::ryml::parse(::ryml::to_csubstr(_content.c_str()));
++			return ::ryml::parse_in_arena(::ryml::to_csubstr(_content.c_str()));
+ 		}
+
+ 	private:

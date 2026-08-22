@@ -113,8 +113,8 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         pendingSFormID = sFormID;
                         havePending = true;
                         logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID], mergedPluginKey,
-                                      originalPlugin, sFormID, line);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID].get<std::string>(),
+                                      mergedPluginKey, originalPlugin, sFormID, line);
                     } else {
                         havePending = false;
                     }
@@ -132,7 +132,7 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
 
 bool MergeMapperInterface001::GetMerges() {
     using json = nlohmann::json;
-    logger::info("Searching for merges within the Data folder");
+    logger::info("Searching Data\\ for zMerge merges...");
     auto constexpr folder = R"(Data\)";
     json json_data;
     size_t total = 0;
@@ -201,8 +201,8 @@ bool MergeMapperInterface001::GetMerges() {
                         mergeMap[originalPluginKey]["map"][storedKey] = storedValue;
                         reverseMergeMap[mergedPluginKey][originalPlugin][storedValue] = storedKey;
                         logger::debug("\tStored mapped value {} at reverseMergedMap[{}][{}][{}]",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue], mergedPluginKey,
-                                      originalPlugin, storedValue);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue].get<std::string>(),
+                                      mergedPluginKey, originalPlugin, storedValue);
                     }
                     count += idmap.size();
                     logger::info(" Found {} maps to {} with {} mappings", originalPlugin, mergedPlugin, count);
@@ -214,7 +214,9 @@ bool MergeMapperInterface001::GetMerges() {
         }
     }
     if (mergeMap.empty()) {
-        logger::info("\tNo merges were found within the Data folder");
+        logger::info(
+            "\tNo zMerge merges found in Data\\. MergeMapper has nothing to do and will stay inactive; this is "
+            "expected unless you use zMerge and is not an error.");
         return false;
     }
     logger::info("\t{} merges found with {} mappings and {} reverse mappings", mergeMap.size(), total, reverseMapTotal);
@@ -236,12 +238,21 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetNewFormID(const c
     RE::FormID formID = oldFormID;
     // check for merged esps
     if (mergeMap.contains(espkey)) {
-        modName = mergeMap[espkey]["name"].get_ptr<nlohmann::json::string_t*>()->c_str();
-        auto storedKey = std::format("{:x}"sv, formID);
-        if (!mergeMap[espkey]["map"].empty()) {
-            toLower(storedKey);
-            if (mergeMap[espkey]["map"].contains(storedKey)) {
-                formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>(), 0, 16);
+        auto mergedName = mergeMap[espkey]["name"].get<std::string>();
+        auto mergedKey = mergedName;
+        toLower(mergedKey);
+        // A whole-plugin wildcard query (oldFormID == 0) can't be resolved correctly when the
+        // merge target has records from multiple source plugins -- rewriting the name alone
+        // would match every record in the merge, not just this one's.
+        bool ambiguous = reverseMergeMap.contains(mergedKey) && reverseMergeMap[mergedKey].size() > 1;
+        if (!(oldFormID == 0 && ambiguous)) {
+            modName = mergeMap[espkey]["name"].get_ptr<nlohmann::json::string_t*>()->c_str();
+            auto storedKey = std::format("{:x}"sv, formID);
+            if (!mergeMap[espkey]["map"].empty()) {
+                toLower(storedKey);
+                if (mergeMap[espkey]["map"].contains(storedKey)) {
+                    formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>(), 0, 16);
+                }
             }
         }
     }
@@ -334,7 +345,11 @@ bool MergeMapperInterface001::CheckForRedundantPlugins() {
         for (auto i = 0; i < modCount; i++) {
             const auto file = files[i];
             plugin = std::string{file->GetFilename()};
-            oldPlugin = std::string{MergeMapperInterface001::GetNewFormID(plugin.c_str(), 0).first};
+            // Read the merge target name directly rather than via GetNewFormID: redundancy
+            // holds regardless of whether the merge is ambiguous, unlike a wildcard filter query.
+            std::string espkey = plugin;
+            toLower(espkey);
+            oldPlugin = mergeMap.contains(espkey) ? mergeMap[espkey]["name"].get<std::string>() : plugin;
             logger::debug(fmt::runtime(fileFormat), file->GetCompileIndex(), "", plugin);
             result = isRedundant(plugin, oldPlugin) || result;
         }
