@@ -1,0 +1,16 @@
+--- a/include/articuno/archives/ryml/yaml_source.h
++++ b/include/articuno/archives/ryml/yaml_source.h
+@@ -299,10 +299,11 @@
+             yaml_source& read(T& value, ::articuno::value_flags flags = ::articuno::value_flags::allow_indirection) {
+             // TODO: When vcpkg catches up to modern ryml versions, switch to per-parser callback overrides.
+             ::ryml::set_callbacks(
+                 ::ryml::Callbacks(nullptr, nullptr, nullptr,
+-                                  [](const char* msg, ::std::size_t msg_len, ::ryml::Location location, void*) {
++                                  [](::ryml::csubstr msg, ::ryml::ErrorDataBasic const& errdata, void*) {
+                                       throw ::articuno::format_error(
+                                           ::std::format("Error deserializing YAML data at line {}, column {}: {}",
+-                                                        location.line, location.col, ::std::string_view(msg, msg_len)));
++                                                        errdata.location.line, errdata.location.col,
++                                                        ::std::string_view(msg.data(), msg.len)));
+                                   }));
+             auto tree = parse(false);

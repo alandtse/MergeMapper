@@ -1,0 +1,11 @@
+--- a/include/articuno/archives/ryml/yaml_source.h
++++ b/include/articuno/archives/ryml/yaml_source.h
+@@ -335,7 +335,7 @@
+                 if (!success) {
+                     throw ::articuno::format_error(
+                         ::std::format("Found duplicate anchor name '{}' "
+                                       "in YAML document.",
+-                                      anchor.str));
++                                      ::std::string_view(anchor.str, anchor.size())));
+                 }
+             }

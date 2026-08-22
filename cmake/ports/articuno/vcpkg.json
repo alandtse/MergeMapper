@@ -1,0 +1,58 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "articuno",
+    "version-semver": "0.0.1",
+    "port-version": 5,
+    "description": "A modern serialization framework for C++ built with modern, cutting-edge C++ support, and support for mapping to existing, arbitrary schemas for standard human-readable and binary formats.",
+    "homepage": "https://www.gitlab.com/colorglass/articuno",
+    "license": "Apache-2.0",
+    "dependencies": [
+        "gluino",
+        "parallel-hashmap"
+    ],
+    "features": {
+        "icywind-archive": {
+            "description": "Support for the Articuno's proprietary binary format, IcyWind.",
+            "dependencies": [
+                {
+                    "name": "articuno",
+                    "default-features": false,
+                    "features": [
+                        "jsoncons-archive"
+                    ]
+                }
+            ]
+        },
+        "jsoncons-archive": {
+            "description": "Support for JSON, BSON, MsgPack, CBOR, and UBJSON archives via jsoncons.",
+            "dependencies": [
+                "jsoncons"
+            ]
+        },
+        "pugixml-archive": {
+            "description": "Support for XML archives via PugiXML.",
+            "dependencies": [
+                "pugixml"
+            ]
+        },
+        "rapidyaml-archive": {
+            "description": "Support for YAML archives via RapidYAML.",
+            "dependencies": [
+                "ryml"
+            ]
+        },
+        "toml11-archive": {
+            "description": "Support for TOML and INI archives via TOML11.",
+            "dependencies": [
+                "toml11"
+            ]
+        }
+    },
+    "default-features": [
+        "icywind-archive",
+        "jsoncons-archive",
+        "rapidyaml-archive",
+        "toml11-archive",
+        "pugixml-archive"
+    ]
+}

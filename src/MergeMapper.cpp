@@ -81,8 +81,8 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         toLower(sFormID);
                         reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
                         logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID], mergedPluginKey,
-                                      originalPlugin, sFormID, line);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID].get<std::string>(),
+                                      mergedPluginKey, originalPlugin, sFormID, line);
                     }
                     continue;
                 }
@@ -98,7 +98,7 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
 
 bool MergeMapperInterface001::GetMerges() {
     using json = nlohmann::json;
-    logger::info("Searching for merges within the Data folder");
+    logger::info("Searching Data\\ for zMerge merges...");
     auto constexpr folder = R"(Data\)";
     json json_data;
     size_t total = 0;
@@ -166,8 +166,8 @@ bool MergeMapperInterface001::GetMerges() {
                         mergeMap[originalPluginKey]["map"][storedKey] = storedValue;
                         reverseMergeMap[mergedPluginKey][originalPlugin][storedValue] = storedKey;
                         logger::debug("\tStored mapped value {} at reverseMergedMap[{}][{}][{}]",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue], mergedPluginKey,
-                                      originalPlugin, storedValue);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue].get<std::string>(),
+                                      mergedPluginKey, originalPlugin, storedValue);
                     }
                     count += idmap.size();
                     logger::info(" Found {} maps to {} with {} mappings and {} reverse mappings", originalPlugin,
@@ -179,7 +179,9 @@ bool MergeMapperInterface001::GetMerges() {
         }
     }
     if (mergeMap.empty()) {
-        logger::info("\tNo merges were found within the Data folder");
+        logger::info(
+            "\tNo zMerge merges found in Data\\. MergeMapper has nothing to do and will stay inactive; this is "
+            "expected unless you use zMerge and is not an error.");
         return false;
     }
     logger::info("\t{} merges found with {} mappings and {} reverse mappings", mergeMap.size(), total, reverseMapTotal);
