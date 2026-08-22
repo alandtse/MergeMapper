@@ -59,7 +59,17 @@ include(GNUInstallDirs)
 # #######################################################################################################################
 # # Find dependencies
 # #######################################################################################################################
-find_package(CommonLibSSE CONFIG REQUIRED)
+set(CommonLibPath "extern/CommonLibSSE-NG")
+set(CommonLibName "CommonLibSSE")
+# Save user's BUILD_TESTS preference
+set(_MERGEMAPPER_BUILD_TESTS ${BUILD_TESTS})
+# Disable tests for CommonLibSSE-NG dependency
+set(BUILD_TESTS OFF)
+add_subdirectory(${CommonLibPath} ${CommonLibName} EXCLUDE_FROM_ALL)
+include("${CommonLibPath}/cmake/CommonLibSSE.cmake")
+# Restore user's BUILD_TESTS preference
+set(BUILD_TESTS ${_MERGEMAPPER_BUILD_TESTS})
+find_package(directxtk CONFIG REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 find_path(ARTICUNO_INCLUDE_DIRS "articuno/articuno.h")
 find_package(nlohmann_json CONFIG REQUIRED)

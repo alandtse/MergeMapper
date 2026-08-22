@@ -27,9 +27,12 @@
             "description": "Build the SKSE plugin.",
             "dependencies": [
                 "articuno",
-                "commonlibsse-ng",
                 "detours",
-                "nlohmann-json"
+                "directxtk",
+                "nlohmann-json",
+                "rapidcsv",
+                "ryml",
+                "spdlog"
             ]
         },
         "tests": {
@@ -47,5 +50,6 @@
         }
     },
     "default-features": [
-        "plugin"    ]
+        "plugin"    ],
+    "builtin-baseline": "127402f1c75bb3d5ff6bce04b285faa4930a5aca"
 }
