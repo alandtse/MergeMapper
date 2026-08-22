@@ -24,3 +24,24 @@ MergeMapperPluginAPI::IMergeMapperInterface001* MergeMapperPluginAPI::GetMergeMa
     g_mergeMapperInterface = static_cast<IMergeMapperInterface001*>(mergeMapperMessage.GetApiFunction(1));
     return g_mergeMapperInterface;
 }
+
+// Stores the API after it has already been fetched
+MergeMapperPluginAPI::IMergeMapperInterface002* g_mergeMapperInterface002 = nullptr;
+
+// Fetches interface revision 2 (adds isAmbiguousMerge/GetFormIDsForPlugin) from MergeMapper
+MergeMapperPluginAPI::IMergeMapperInterface002* MergeMapperPluginAPI::GetMergeMapperInterface002() {
+    if (g_mergeMapperInterface002) {
+        return g_mergeMapperInterface002;
+    }
+
+    MergeMapperMessage mergeMapperMessage;
+    const auto skseMessaging = SKSE::GetMessagingInterface();
+    skseMessaging->Dispatch(MergeMapperMessage::kMessage_GetInterface, (void*)&mergeMapperMessage,
+                            sizeof(MergeMapperMessage*), MergeMapperPluginName);
+    if (!mergeMapperMessage.GetApiFunction) {
+        return nullptr;
+    }
+
+    g_mergeMapperInterface002 = static_cast<IMergeMapperInterface002*>(mergeMapperMessage.GetApiFunction(2));
+    return g_mergeMapperInterface002;
+}

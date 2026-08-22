@@ -1,6 +1,8 @@
 #pragma once
 #include <RE/Skyrim.h>
 #include <SKSE/SKSE.h>
+
+#include <vector>
 // Interface code based on https://github.com/adamhynek/higgs
 
 namespace MergeMapperPluginAPI {
@@ -45,6 +47,33 @@ namespace MergeMapperPluginAPI {
         /// @param modName The modName to check, char* e.g., input1.esp
         /// @return true if was merged into some file
         virtual bool wasMerged(const char* modName) = 0;
+    };
+
+    // Returns an IMergeMapperInterface002 object compatible with the API shown below
+    // This should only be called after SKSE sends kMessage_PostLoad to your plugin
+    struct IMergeMapperInterface002;
+    IMergeMapperInterface002* GetMergeMapperInterface002();
+
+    // Extends MergeMapper's mod support API with per-plugin merge introspection, for resolving
+    // a "whole plugin" wildcard filter (GetNewFormID(modName, 0)) precisely when the merge it
+    // was folded into also contains records from other source plugins, instead of matching
+    // every record in the merge target.
+    struct IMergeMapperInterface002 : public IMergeMapperInterface001 {
+        /// @brief Whether the merge modName was folded into also contains records originally
+        /// from OTHER source plugins, i.e. whether a whole-plugin wildcard query for any one of
+        /// those sources would be ambiguous.
+        /// @param modName The merged (post-zMerge) plugin name, e.g. Merge.esp
+        /// @return true if this merge target was assembled from more than one source plugin
+        virtual bool isAmbiguousMerge(const char* modName) = 0;
+
+        /// @brief Get every FormID that oldName's records now have inside the plugin it was
+        /// merged into. Use this to expand a "whole plugin" wildcard filter into an explicit
+        /// disjunction when isAmbiguousMerge is true, instead of matching every record in the
+        /// merge target.
+        /// @param oldName The original modName, e.g. Dragonborn.esp
+        /// @return the FormIDs (in the merged plugin's numbering) originally from oldName;
+        /// empty if oldName was never merged.
+        virtual std::vector<RE::FormID> GetFormIDsForPlugin(const char* oldName) = 0;
     };
 
 }  // namespace MergeMapperPluginAPI
