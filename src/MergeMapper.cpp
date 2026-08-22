@@ -81,8 +81,8 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         toLower(sFormID);
                         reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
                         logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID], mergedPluginKey,
-                                      originalPlugin, sFormID, line);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][sFormID].get<std::string>(),
+                                      mergedPluginKey, originalPlugin, sFormID, line);
                     }
                     continue;
                 }
@@ -166,8 +166,8 @@ bool MergeMapperInterface001::GetMerges() {
                         mergeMap[originalPluginKey]["map"][storedKey] = storedValue;
                         reverseMergeMap[mergedPluginKey][originalPlugin][storedValue] = storedKey;
                         logger::debug("\tStored mapped value {} at reverseMergedMap[{}][{}][{}]",
-                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue], mergedPluginKey,
-                                      originalPlugin, storedValue);
+                                      reverseMergeMap[mergedPluginKey][originalPlugin][storedValue].get<std::string>(),
+                                      mergedPluginKey, originalPlugin, storedValue);
                     }
                     count += idmap.size();
                     logger::info(" Found {} maps to {} with {} mappings and {} reverse mappings", originalPlugin,
