@@ -26,6 +26,9 @@ void* GetApi(unsigned int revisionNumber) {
         case 1:
             logger::info("Interface revision 1 requested");
             return &g_interface001;
+        case 2:
+            logger::info("Interface revision 2 requested");
+            return &g_interface001;
     }
     return nullptr;
 }
@@ -49,10 +52,16 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
     std::string line;
     const std::string pluginStart = "Copying records from ";
     const std::string formIDStart = "Copying ";
+    const std::string failedStart = "Failed to copy record ";
     std::string originalPlugin = "";
+    std::string originalPluginKey = "";
     RE::FormID formID;
     std::string sFormID;
     std::uint32_t count = 0;
+    // zMerge logs "Failed to copy record <name>" immediately after a failed "Copying <name>";
+    // track the entry just added so that line can undo it instead of leaving a phantom FormID.
+    bool havePending = false;
+    std::string pendingOriginalPluginKey, pendingSFormID;
     auto mergedPluginKey = mergedPlugin;
     // lowercase mergedPlugin since it is also a key for reversemap
     toLower(mergedPluginKey);
@@ -63,14 +72,26 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
         if (entry.exists() && entry.is_regular_file() && file.wstring().starts_with(mergePrefix) &&
             file.extension().string() == ".txt") {
             logger::debug("mergedPlugin: Processing {}", path.string());
+            havePending = false;
             try {
                 std::ifstream input(path);
                 while (std::getline(input, line)) {
                     const auto closeBracketPos = line.find("]");
-                    if (line.starts_with(pluginStart)) {
+                    if (line.starts_with(failedStart)) {
+                        if (havePending) {
+                            count--;
+                            reverseMergeMap[mergedPluginKey][originalPlugin].erase(pendingSFormID);
+                            auto& ids = mergeMap[pendingOriginalPluginKey]["allFormIDs"];
+                            if (!ids.empty()) ids.erase(ids.end() - 1);
+                        }
+                        havePending = false;
+                    } else if (line.starts_with(pluginStart)) {
                         // unlike mergedPlugin, originalPlugin is iterated against instead of used as a key so no need
                         // to lowercase
                         originalPlugin = line.substr(pluginStart.length());
+                        originalPluginKey = originalPlugin;
+                        toLower(originalPluginKey);
+                        havePending = false;
                         logger::debug("\tFound processing record for {} from {}", originalPlugin, line);
                     } else if (!originalPlugin.empty() && line.starts_with(formIDStart) &&
                                closeBracketPos != std::string::npos) {
@@ -80,9 +101,22 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         sFormID = std::format("{:x}"sv, formID);
                         toLower(sFormID);
                         reverseMergeMap[mergedPluginKey][originalPlugin][sFormID] = sFormID;
+                        // map.json only lists FormIDs zMerge had to renumber (collisions); a
+                        // non-colliding record keeps its logged ID as its final one.
+                        auto finalFormID = sFormID;
+                        if (mergeMap.contains(originalPluginKey) &&
+                            mergeMap[originalPluginKey]["map"].contains(sFormID)) {
+                            finalFormID = mergeMap[originalPluginKey]["map"][sFormID].get<std::string>();
+                        }
+                        mergeMap[originalPluginKey]["allFormIDs"].push_back(finalFormID);
+                        pendingOriginalPluginKey = originalPluginKey;
+                        pendingSFormID = sFormID;
+                        havePending = true;
                         logger::debug("\tStored value {} at reverseMergedMap[{}][{}][{}] from {}",
                                       reverseMergeMap[mergedPluginKey][originalPlugin][sFormID].get<std::string>(),
                                       mergedPluginKey, originalPlugin, sFormID, line);
+                    } else {
+                        havePending = false;
                     }
                     continue;
                 }
@@ -146,7 +180,8 @@ bool MergeMapperInterface001::GetMerges() {
             auto count = 0;
             auto reverseMapCount = 0;
             if (mergedPlugin != "" && !json_data.empty()) {
-                reverseMapCount += parseMergeLog(path, mergedPlugin);
+                // Populate this merge's FormID delta from map.json before parseMergeLog runs
+                // below -- it reconciles against this delta to build the complete FormID list.
                 for (auto& [originalPlugin, idmap] : json_data.items()) {
                     auto originalPluginKey = originalPlugin;  // key is lowercase since we search on it
                     toLower(originalPluginKey);
@@ -170,11 +205,11 @@ bool MergeMapperInterface001::GetMerges() {
                                       mergedPluginKey, originalPlugin, storedValue);
                     }
                     count += idmap.size();
-                    logger::info(" Found {} maps to {} with {} mappings and {} reverse mappings", originalPlugin,
-                                 mergedPlugin, count, reverseMapCount);
+                    logger::info(" Found {} maps to {} with {} mappings", originalPlugin, mergedPlugin, count);
                     total += count;
-                    reverseMapTotal += reverseMapCount;
                 }
+                reverseMapCount += parseMergeLog(path, mergedPlugin);
+                reverseMapTotal += reverseMapCount;
             }
         }
     }
@@ -267,6 +302,24 @@ bool MergeMapperPluginAPI::MergeMapperInterface001::wasMerged(const char* modNam
     std::string espkey = modName;
     toLower(espkey);
     return mergeMap.contains(espkey);
+}
+
+bool MergeMapperPluginAPI::MergeMapperInterface001::isAmbiguousMerge(const char* modName) {
+    std::string mergedKey = modName;
+    toLower(mergedKey);
+    return reverseMergeMap.contains(mergedKey) && reverseMergeMap[mergedKey].size() > 1;
+}
+
+std::vector<RE::FormID> MergeMapperPluginAPI::MergeMapperInterface001::GetFormIDsForPlugin(const char* oldName) {
+    std::vector<RE::FormID> result;
+    std::string espkey = oldName;
+    toLower(espkey);
+    if (mergeMap.contains(espkey) && mergeMap[espkey].contains("allFormIDs")) {
+        for (auto& sFormID : mergeMap[espkey]["allFormIDs"]) {
+            result.push_back(static_cast<RE::FormID>(std::stoi(sFormID.get<std::string>(), 0, 16)));
+        }
+    }
+    return result;
 }
 
 bool MergeMapperInterface001::CheckForRedundantPlugins() {

@@ -102,6 +102,30 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	}
 ```
 
+### Resolving a whole-plugin wildcard filter (revision 2)
+
+If your filter syntax lets a user omit a FormID to mean "match every record in this plugin"
+(`GetNewFormID(modName, 0)`), that query can't be answered precisely when the merge a plugin
+was folded into also contains records from other source plugins -- MergeMapper reports no
+merge for it rather than guessing. Use `GetMergeMapperInterface002()` to expand the wildcard
+into an explicit disjunction instead of skipping it:
+```cpp
+#include "MergeMapperPluginAPI.h"
+...
+if (auto* mm2 = MergeMapperPluginAPI::GetMergeMapperInterface002()) {
+	const auto [mergedName, mergedFormID] = mm2->GetNewFormID(modName.c_str(), 0);
+	if (mergedFormID == 0 && mm2->isAmbiguousMerge(mergedName)) {
+		// Ambiguous: expand to the specific records that came from modName instead of
+		// matching everything in mergedName.
+		for (const auto formID : mm2->GetFormIDsForPlugin(modName.c_str())) {
+			// match formID~mergedName
+		}
+	} else {
+		// Unambiguous (or unmerged): mergedName/mergedFormID resolve as usual.
+	}
+}
+```
+
 ### Manage dependency with vcpkg
 
 VCPKG is supported using a custom port found in [cmake/ports/mergemapper](cmake/ports/mergemapper).

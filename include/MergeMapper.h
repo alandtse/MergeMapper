@@ -7,8 +7,8 @@ namespace MergeMapperPluginAPI {
     // Handles skse mod messages requesting to fetch API functions from MergeMapper
     void ModMessageHandler(SKSE::MessagingInterface::Message* message);
 
-    // This object provides access to MergeMapper's mod support API version 1
-    struct MergeMapperInterface001 : IMergeMapperInterface001 {
+    // This object provides access to MergeMapper's mod support API (revisions 1 and 2)
+    struct MergeMapperInterface001 : IMergeMapperInterface002 {
         virtual unsigned int GetBuildNumber();
 
         /// @brief Search the data directory for any zmerge merges. This searches for map.json files to build a mapping
@@ -43,6 +43,16 @@ namespace MergeMapperPluginAPI {
         /// @param modName The modName to check, char* e.g., input1.esp
         /// @return true if was merged into some file
         bool wasMerged(const char* modName);
+
+        /// @brief Whether the merge modName was folded into also contains records from other source plugins.
+        /// @param modName The merged (post-zMerge) plugin name, e.g. Merge.esp
+        /// @return true if this merge target was assembled from more than one source plugin
+        bool isAmbiguousMerge(const char* modName);
+
+        /// @brief Get every FormID that oldName's records now have inside the plugin it was merged into.
+        /// @param oldName The original modName, e.g. Dragonborn.esp
+        /// @return the FormIDs in the merged plugin's numbering; empty if oldName was never merged
+        std::vector<RE::FormID> GetFormIDsForPlugin(const char* oldName);
     };
 
     namespace Hook {
