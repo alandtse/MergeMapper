@@ -203,12 +203,21 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetNewFormID(const c
     RE::FormID formID = oldFormID;
     // check for merged esps
     if (mergeMap.contains(espkey)) {
-        modName = mergeMap[espkey]["name"].get_ptr<nlohmann::json::string_t*>()->c_str();
-        auto storedKey = std::format("{:x}"sv, formID);
-        if (!mergeMap[espkey]["map"].empty()) {
-            toLower(storedKey);
-            if (mergeMap[espkey]["map"].contains(storedKey)) {
-                formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>(), 0, 16);
+        auto mergedName = mergeMap[espkey]["name"].get<std::string>();
+        auto mergedKey = mergedName;
+        toLower(mergedKey);
+        // A whole-plugin wildcard query (oldFormID == 0) can't be resolved correctly when the
+        // merge target has records from multiple source plugins -- rewriting the name alone
+        // would match every record in the merge, not just this one's.
+        bool ambiguous = reverseMergeMap.contains(mergedKey) && reverseMergeMap[mergedKey].size() > 1;
+        if (!(oldFormID == 0 && ambiguous)) {
+            modName = mergeMap[espkey]["name"].get_ptr<nlohmann::json::string_t*>()->c_str();
+            auto storedKey = std::format("{:x}"sv, formID);
+            if (!mergeMap[espkey]["map"].empty()) {
+                toLower(storedKey);
+                if (mergeMap[espkey]["map"].contains(storedKey)) {
+                    formID = std::stoi(mergeMap[espkey]["map"][storedKey].get<std::string>(), 0, 16);
+                }
             }
         }
     }
@@ -283,7 +292,11 @@ bool MergeMapperInterface001::CheckForRedundantPlugins() {
         for (auto i = 0; i < modCount; i++) {
             const auto file = files[i];
             plugin = std::string{file->GetFilename()};
-            oldPlugin = std::string{MergeMapperInterface001::GetNewFormID(plugin.c_str(), 0).first};
+            // Read the merge target name directly rather than via GetNewFormID: redundancy
+            // holds regardless of whether the merge is ambiguous, unlike a wildcard filter query.
+            std::string espkey = plugin;
+            toLower(espkey);
+            oldPlugin = mergeMap.contains(espkey) ? mergeMap[espkey]["name"].get<std::string>() : plugin;
             logger::debug(fmt::runtime(fileFormat), file->GetCompileIndex(), "", plugin);
             result = isRedundant(plugin, oldPlugin) || result;
         }
