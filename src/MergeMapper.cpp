@@ -105,10 +105,13 @@ std::uint32_t parseMergeLog(const std::wstring a_path, const std::string mergedP
                         // non-colliding record keeps its logged ID as its final one.
                         auto finalFormID = sFormID;
                         if (mergeMap.contains(originalPluginKey) &&
+                            mergeMap[originalPluginKey]["map"].is_object() &&
                             mergeMap[originalPluginKey]["map"].contains(sFormID)) {
                             finalFormID = mergeMap[originalPluginKey]["map"][sFormID].get<std::string>();
                         }
                         mergeMap[originalPluginKey]["allFormIDs"].push_back(finalFormID);
+                        // A log-only plugin has no map.json "name" entry; set it so it doesn't stay null.
+                        mergeMap[originalPluginKey]["name"] = mergedPlugin;
                         pendingOriginalPluginKey = originalPluginKey;
                         pendingSFormID = sFormID;
                         havePending = true;
@@ -237,7 +240,7 @@ std::pair<const char*, RE::FormID> MergeMapperInterface001::GetNewFormID(const c
     toLower(espkey);
     RE::FormID formID = oldFormID;
     // check for merged esps
-    if (mergeMap.contains(espkey)) {
+    if (mergeMap.contains(espkey) && mergeMap[espkey]["name"].is_string()) {
         auto mergedName = mergeMap[espkey]["name"].get<std::string>();
         auto mergedKey = mergedName;
         toLower(mergedKey);
@@ -349,7 +352,9 @@ bool MergeMapperInterface001::CheckForRedundantPlugins() {
             // holds regardless of whether the merge is ambiguous, unlike a wildcard filter query.
             std::string espkey = plugin;
             toLower(espkey);
-            oldPlugin = mergeMap.contains(espkey) ? mergeMap[espkey]["name"].get<std::string>() : plugin;
+            oldPlugin = (mergeMap.contains(espkey) && mergeMap[espkey]["name"].is_string())
+                            ? mergeMap[espkey]["name"].get<std::string>()
+                            : plugin;
             logger::debug(fmt::runtime(fileFormat), file->GetCompileIndex(), "", plugin);
             result = isRedundant(plugin, oldPlugin) || result;
         }
